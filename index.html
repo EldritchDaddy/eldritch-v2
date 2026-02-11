@@ -23,9 +23,10 @@ html, body {
 #output {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden; /* 🔥 prevent horizontal scroll */
   padding: 16px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre-wrap; /* preserve line breaks */
+  word-break: break-word; /* break long words */
 }
 
 #inputBar {
@@ -52,7 +53,9 @@ html, body {
   line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
-  white-space: pre-wrap;
+
+  white-space: pre-wrap;   /* 🔥 allow stacking */
+  word-break: break-word;  /* 🔥 prevent horizontal growth */
 }
 
 #sendBtn {
@@ -78,7 +81,12 @@ If you can read this, evolution has begun.
 </div>
 
 <div id="inputBar">
-  <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
+  <textarea 
+    id="input" 
+    rows="1" 
+    placeholder="Type command..." 
+    enterkeyhint="send"
+  ></textarea>
   <button id="sendBtn">↑</button>
 </div>
 
@@ -88,18 +96,24 @@ const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
 /* Auto grow textarea */
-input.addEventListener("input", () => {
+function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
-});
+}
+
+input.addEventListener("input", autoResize);
 
 /* Send message */
 function sendMessage() {
-  if (input.value.trim() === "") return;
+  const text = input.value.trim();
+  if (!text) return;
 
-  output.innerHTML += "\n> " + input.value;
+  const div = document.createElement("div");
+  div.textContent = "> " + text;
+  output.appendChild(div);
+
   input.value = "";
-  input.style.height = "auto";
+  autoResize();
 
   output.scrollTop = output.scrollHeight;
 }
@@ -117,4 +131,3 @@ input.addEventListener("keydown", (e) => {
 
 </body>
 </html>
-
