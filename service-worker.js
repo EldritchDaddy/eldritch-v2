@@ -1,4 +1,4 @@
-const CACHE_NAME = "eldritch-v2-cache";
+const CACHE_NAME = "eldritch-v4-cache";
 
 self.addEventListener("install", event => {
   event.waitUntil(
