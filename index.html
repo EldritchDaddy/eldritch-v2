@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
 <title>Eldritch V2</title>
 
 <style>
@@ -11,25 +9,27 @@ html, body {
     margin: 0;
     padding: 0;
     height: 100%;
-    background: #000;
+    background: black;
     color: #00ff00;
     font-family: monospace;
+    overflow: hidden;
 }
 
-body {
+#app {
     display: flex;
     flex-direction: column;
+    height: 100dvh; /* dynamic viewport height */
 }
 
-/* OUTPUT AREA */
 #output {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
     scroll-behavior: smooth;
 }
 
-/* INPUT BAR */
 #inputBar {
     display: flex;
     align-items: flex-end;
@@ -38,7 +38,6 @@ body {
     border-top: 1px solid #222;
 }
 
-/* TEXTAREA */
 #input {
     flex: 1;
     resize: none;
@@ -47,99 +46,74 @@ body {
     background: #111;
     color: #00ff00;
     font-size: 16px;
-    font-family: monospace;
-    line-height: 1.4;
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
 }
 
-/* SEND BUTTON */
 #send {
-    background: #00ff00;
-    color: #000;
-    border: none;
-    padding: 10px 14px;
     margin-left: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* SCROLL DOWN BUTTON */
-#scrollDown {
-    position: fixed;
-    right: 16px;
-    bottom: 80px;
-    background: #00ff00;
-    color: #000;
+    background: #00aa00;
     border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-    display: none;
+    color: black;
+    font-weight: bold;
+    padding: 10px 14px;
+    border-radius: 6px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="output">
-ELDRITCH V2 — ONLINE BUILD<br>
+<div id="app">
+
+    <div id="output">
+ELDRITCH V2 – ONLINE BUILD
 If you can read this, evolution has begun.
-</div>
+    </div>
 
-<div id="inputBar">
-<textarea id="input" rows="1" placeholder="Type command..."></textarea>
-<button id="send">↵</button>
-</div>
+    <div id="inputBar">
+        <textarea id="input" rows="1" placeholder="Type command..."></textarea>
+        <button id="send">↑</button>
+    </div>
 
-<button id="scrollDown">↓</button>
+</div>
 
 <script>
+const output = document.getElementById("output");
 const input = document.getElementById("input");
 const send = document.getElementById("send");
-const output = document.getElementById("output");
-const scrollDown = document.getElementById("scrollDown");
 
-/* AUTO RESIZE TEXTAREA */
-function autoResize() {
+/* AUTO GROW TEXTAREA */
+input.addEventListener("input", () => {
     input.style.height = "auto";
     input.style.height = input.scrollHeight + "px";
-}
+});
 
-input.addEventListener("input", autoResize);
+/* SUBMIT */
+function submitCommand() {
+    if (input.value.trim() === "") return;
 
-/* SEND BUTTON CLICK */
-send.addEventListener("click", () => {
-    const text = input.value.trim();
-    if (!text) return;
-
-    const atBottom =
-        output.scrollHeight - output.scrollTop <= output.clientHeight + 5;
-
-    output.innerHTML += "<div>> " + text + "</div>";
+    const line = document.createElement("div");
+    line.textContent = "> " + input.value;
+    output.appendChild(line);
 
     input.value = "";
-    autoResize();
+    input.style.height = "auto";
 
-    if (atBottom) {
-        output.scrollTop = output.scrollHeight;
+    output.scrollTop = output.scrollHeight;
+}
+
+send.addEventListener("click", submitCommand);
+
+/* ENTER SUBMITS, SHIFT+ENTER NEW LINE */
+input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        submitCommand();
     }
 });
 
-/* SHOW SCROLL DOWN BUTTON */
-output.addEventListener("scroll", () => {
-    const atBottom =
-        output.scrollHeight - output.scrollTop <= output.clientHeight + 5;
-
-    scrollDown.style.display = atBottom ? "none" : "block";
-});
-
-/* SCROLL TO BOTTOM */
-scrollDown.addEventListener("click", () => {
-    output.scrollTop = output.scrollHeight;
-});
-</script>
-
-<script>
+/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("service-worker.js");
 }
