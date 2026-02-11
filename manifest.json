@@ -1,10 +1,12 @@
 {
   "name": "Eldritch V2",
   "short_name": "Eldritch",
-  "start_url": "index.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
