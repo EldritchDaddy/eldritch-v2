@@ -48,6 +48,9 @@ html, body {
   line-height: 1.4;
   max-height: 150px;
   overflow-y: auto;
+
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 #send {
@@ -83,7 +86,12 @@ html, body {
   </div>
 
   <div id="inputBar">
-    <textarea id="input" placeholder="Type command..." rows="1"></textarea>
+    <textarea 
+      id="input"
+      placeholder="Type command..."
+      rows="1"
+      wrap="soft"
+    ></textarea>
     <button id="send">⏎</button>
   </div>
 
@@ -97,7 +105,7 @@ const input = document.getElementById("input");
 const send = document.getElementById("send");
 const scrollDown = document.getElementById("scrollDown");
 
-// Auto-expand textarea
+// Auto-expand textarea upward
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
@@ -120,6 +128,7 @@ function sendMessage() {
 
 send.addEventListener("click", sendMessage);
 
+// Enter sends, Shift+Enter newline
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
