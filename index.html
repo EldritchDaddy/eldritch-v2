@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eldritch V2</title>
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    color: #00ff00;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#output {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+#input {
+    padding: 16px;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    background: #111;
+    color: #0f0;
+}
+</style>
+</head>
+
+<body>
+
+<div id="output">
+ELDRITCH V2 – ONLINE BUILD<br>
+If you can read this, evolution has begun.
+</div>
+
+<input id="input" placeholder="Type command..." />
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
