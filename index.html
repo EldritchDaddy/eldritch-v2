@@ -1,122 +1,118 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Eldritch V2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <style>
 html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: black;
-    color: #00ff00;
-    font-family: monospace;
-    overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  background: black;
+  color: #00ff00;
+  font-family: monospace;
+  overflow: hidden;
 }
 
-#app {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh; /* dynamic viewport height */
+#container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 #output {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    white-space: pre-wrap;
-    word-break: break-word;
-    scroll-behavior: smooth;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 #inputBar {
-    display: flex;
-    align-items: flex-end;
-    padding: 10px;
-    background: #111;
-    border-top: 1px solid #222;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+  background: #111;
+  border-top: 1px solid #222;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
 #input {
-    flex: 1;
-    resize: none;
-    border: none;
-    outline: none;
-    background: #111;
-    color: #00ff00;
-    font-size: 16px;
-    max-height: 150px;
-    overflow-y: auto;
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #00ff00;
+  font-size: 16px;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
 }
 
-#send {
-    margin-left: 8px;
-    background: #00aa00;
-    border: none;
-    color: black;
-    font-weight: bold;
-    padding: 10px 14px;
-    border-radius: 6px;
+#sendBtn {
+  margin-left: 8px;
+  background: #00ff00;
+  color: black;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-weight: bold;
 }
+
 </style>
 </head>
 
 <body>
 
-<div id="app">
-
-    <div id="output">
-ELDRITCH V2 – ONLINE BUILD
+<div id="container">
+  <div id="output">
+ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
-    </div>
+  </div>
+</div>
 
-    <div id="inputBar">
-        <textarea id="input" rows="1" placeholder="Type command..."></textarea>
-        <button id="send">↑</button>
-    </div>
-
+<div id="inputBar">
+  <textarea id="input" rows="1" placeholder="Type command..."></textarea>
+  <button id="sendBtn">↑</button>
 </div>
 
 <script>
-const output = document.getElementById("output");
 const input = document.getElementById("input");
-const send = document.getElementById("send");
+const output = document.getElementById("output");
+const sendBtn = document.getElementById("sendBtn");
 
-/* AUTO GROW TEXTAREA */
+/* Auto grow textarea */
 input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = input.scrollHeight + "px";
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
 });
 
-/* SUBMIT */
-function submitCommand() {
-    if (input.value.trim() === "") return;
+/* Send message */
+function sendMessage() {
+  if (input.value.trim() === "") return;
 
-    const line = document.createElement("div");
-    line.textContent = "> " + input.value;
-    output.appendChild(line);
+  output.innerHTML += "\n> " + input.value;
+  input.value = "";
+  input.style.height = "auto";
 
-    input.value = "";
-    input.style.height = "auto";
-
-    output.scrollTop = output.scrollHeight;
+  output.scrollTop = output.scrollHeight;
 }
 
-send.addEventListener("click", submitCommand);
+sendBtn.addEventListener("click", sendMessage);
 
-/* ENTER SUBMITS, SHIFT+ENTER NEW LINE */
+/* Enter submits */
 input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        submitCommand();
-    }
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
-
-/* SERVICE WORKER */
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-}
 </script>
 
 </body>
