@@ -1,60 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Eldritch V2</title>
 
 <link rel="manifest" href="manifest.json">
 
 <style>
-body {
-    margin: 0;
-    background: black;
-    color: #00ff00;
-    font-family: monospace;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: black;
+  color: #00ff00;
+  font-family: monospace;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 #output {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  scroll-behavior: smooth;
+}
+
+#input-bar {
+  padding: 12px;
+  background: #111;
+  border-top: 1px solid #222;
 }
 
 #input {
-    padding: 16px;
-    border: none;
-    outline: none;
-    font-size: 18px;
-    background: #111;
-    color: #00ff00;
+  width: 100%;
+  background: #111;
+  border: none;
+  outline: none;
+  color: #00ff00;
+  font-size: 16px;
+}
+
+#scroll-down {
+  position: fixed;
+  right: 16px;
+  bottom: 80px;
+  background: #111;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  padding: 8px 12px;
+  font-size: 18px;
+  cursor: pointer;
+  display: none;
 }
 </style>
 </head>
 
 <body>
 
-<div id="output">
-ELDRITCH V2 – ONLINE BUILD<br>
-If you can read this, evolution has begun.
+<div id="app">
+
+  <div id="output">
+    ELDRITCH V2 — ONLINE BUILD<br>
+    If you can read this, evolution has begun.
+  </div>
+
+  <div id="input-bar">
+    <input id="input" type="text" placeholder="Type command..." autocomplete="off" />
+  </div>
+
 </div>
 
-<input id="input" type="text" placeholder="Type command..." autocomplete="off" />
+<div id="scroll-down">↓</div>
 
 <script>
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
+const output = document.getElementById("output");
+const input = document.getElementById("input");
+const scrollBtn = document.getElementById("scroll-down");
+
+function isNearBottom() {
+  return output.scrollHeight - output.scrollTop - output.clientHeight < 100;
 }
+
+function scrollToBottom() {
+  output.scrollTo({
+    top: output.scrollHeight,
+    behavior: "smooth"
+  });
+}
+
+output.addEventListener("scroll", () => {
+  if (isNearBottom()) {
+    scrollBtn.style.display = "none";
+  }
+});
+
+scrollBtn.addEventListener("click", () => {
+  scrollToBottom();
+  scrollBtn.style.display = "none";
+});
+
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter" && input.value.trim() !== "") {
+
+    const userText = input.value;
+    input.value = "";
+
+    const line = document.createElement("div");
+    line.textContent = "> " + userText;
+    output.appendChild(line);
+
+    if (isNearBottom()) {
+      scrollToBottom();
+    } else {
+      scrollBtn.style.display = "block";
+    }
+  }
+});
+
+window.onload = () => {
+  input.focus();
+};
 </script>
 
 <script>
-window.onload = () => {
-    const input = document.getElementById("input");
-    input.focus();
-};
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
 </script>
 
 </body>
