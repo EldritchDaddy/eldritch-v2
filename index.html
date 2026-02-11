@@ -2,163 +2,147 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <title>Eldritch V2</title>
 
 <style>
 html, body {
-  margin: 0;
-  height: 100%;
-  background: black;
-  color: #00ff00;
-  font-family: monospace;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #000;
+    color: #00ff00;
+    font-family: monospace;
 }
 
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+body {
+    display: flex;
+    flex-direction: column;
 }
 
+/* OUTPUT AREA */
 #output {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  box-sizing: border-box;
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    scroll-behavior: smooth;
 }
 
+/* INPUT BAR */
 #inputBar {
-  display: flex;
-  align-items: flex-end;
-  padding: 10px;
-  background: #111;
-  border-top: 1px solid #222;
+    display: flex;
+    align-items: flex-end;
+    padding: 10px;
+    background: #111;
+    border-top: 1px solid #222;
 }
 
+/* TEXTAREA */
 #input {
-  flex: 1;
-  resize: none;
-  border: none;
-  outline: none;
-  background: #111;
-  color: #00ff00;
-  font-family: monospace;
-  font-size: 16px;
-  line-height: 1.4;
-  max-height: 150px;
-  overflow-y: auto;
-
-  white-space: pre-wrap;
-  word-break: break-word;
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: #111;
+    color: #00ff00;
+    font-size: 16px;
+    font-family: monospace;
+    line-height: 1.4;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
+/* SEND BUTTON */
 #send {
-  background: none;
-  border: none;
-  color: #00ff00;
-  font-size: 18px;
-  padding: 8px;
-  cursor: pointer;
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 10px 14px;
+    margin-left: 8px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
+/* SCROLL DOWN BUTTON */
 #scrollDown {
-  position: fixed;
-  right: 15px;
-  bottom: 80px;
-  background: black;
-  border: 1px solid #00ff00;
-  color: #00ff00;
-  padding: 8px;
-  cursor: pointer;
-  display: none;
+    position: fixed;
+    right: 16px;
+    bottom: 80px;
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: none;
 }
 </style>
 </head>
 
 <body>
 
-<div id="app">
+<div id="output">
+ELDRITCH V2 — ONLINE BUILD<br>
+If you can read this, evolution has begun.
+</div>
 
-  <div id="output">
-    ELDRITCH V2 — ONLINE BUILD<br>
-    If you can read this, evolution has begun.
-  </div>
-
-  <div id="inputBar">
-    <textarea 
-      id="input"
-      placeholder="Type command..."
-      rows="1"
-      wrap="soft"
-    ></textarea>
-    <button id="send">⏎</button>
-  </div>
-
+<div id="inputBar">
+<textarea id="input" rows="1" placeholder="Type command..."></textarea>
+<button id="send">↵</button>
 </div>
 
 <button id="scrollDown">↓</button>
 
 <script>
-const output = document.getElementById("output");
 const input = document.getElementById("input");
 const send = document.getElementById("send");
+const output = document.getElementById("output");
 const scrollDown = document.getElementById("scrollDown");
 
-// Auto-expand textarea upward
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = input.scrollHeight + "px";
-});
-
-// Send message
-function sendMessage() {
-  const value = input.value.trim();
-  if (!value) return;
-
-  const line = document.createElement("div");
-  line.textContent = "> " + value;
-  output.appendChild(line);
-
-  input.value = "";
-  input.style.height = "auto";
-
-  smartScroll();
+/* AUTO RESIZE TEXTAREA */
+function autoResize() {
+    input.style.height = "auto";
+    input.style.height = input.scrollHeight + "px";
 }
 
-send.addEventListener("click", sendMessage);
+input.addEventListener("input", autoResize);
 
-// Enter sends, Shift+Enter newline
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+/* SEND BUTTON CLICK */
+send.addEventListener("click", () => {
+    const text = input.value.trim();
+    if (!text) return;
+
+    const atBottom =
+        output.scrollHeight - output.scrollTop <= output.clientHeight + 5;
+
+    output.innerHTML += "<div>> " + text + "</div>";
+
+    input.value = "";
+    autoResize();
+
+    if (atBottom) {
+        output.scrollTop = output.scrollHeight;
+    }
 });
 
-// Smart scroll logic
-function smartScroll() {
-  const nearBottom =
-    output.scrollHeight - output.scrollTop - output.clientHeight < 50;
-
-  if (nearBottom) {
-    output.scrollTop = output.scrollHeight;
-  }
-}
-
-// Detect manual scroll
+/* SHOW SCROLL DOWN BUTTON */
 output.addEventListener("scroll", () => {
-  const atBottom =
-    output.scrollHeight - output.scrollTop - output.clientHeight < 10;
+    const atBottom =
+        output.scrollHeight - output.scrollTop <= output.clientHeight + 5;
 
-  scrollDown.style.display = atBottom ? "none" : "block";
+    scrollDown.style.display = atBottom ? "none" : "block";
 });
 
-// Scroll down button
+/* SCROLL TO BOTTOM */
 scrollDown.addEventListener("click", () => {
-  output.scrollTop = output.scrollHeight;
-  scrollDown.style.display = "none";
+    output.scrollTop = output.scrollHeight;
 });
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+}
 </script>
 
 </body>
