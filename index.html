@@ -5,13 +5,25 @@
 <link rel="manifest" href="/eldritch-v2/manifest.json">
 
 <style>
+
+/* ================================
+   DYNAMIC VIEWPORT LOCK (STEP 1)
+   ================================ */
+:root {
+  --vh: 1vh; /* replaced later via JS */
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+
+  /* ❗ Lock height using dynamic vh replacement */
+  height: calc(var(--vh) * 100);
+
   background: black;
   color: #00ff00;
   font-family: monospace;
+  overflow: hidden; /* Prevent Android keyboard push */
 }
 
 body {
@@ -27,14 +39,159 @@ body {
   overflow: hidden;
 }
 
-/* Output area */
+/* ================================
+   TRUE SCROLL REGION (STEP 1)
+   ================================ */
 #output {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: 80px; /* space for input bar */
+
+  /* replaced bottom padding with dynamic input height */
+  padding-bottom: calc( var(--input-bar-height, 80px) + 8px );
+
   white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ================================
+   INPUT BAR LOCKED TO BOTTOM
+   ================================ */
+#inputBar {
+  position: fixed; /* fixed prevents lifting */
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+
+  background: #111;
+  border-top: 1px solid #222;
+
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  z-index: 999; /* ensures it stays above output */
+}
+
+/* Textarea */
+#input {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #00ff00;
+  font-size: 16px;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Send button */
+#sendBtn {
+  margin-left: 8px;
+  background: #00ff00;
+  color: black;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-weight: bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="container">
+  <div id="output">
+ELDRITCH V2 — ONLINE BUILD
+If you can read this, evolution has begun.
+  </div>
+</div>
+
+<div id="inputBar">
+  <textarea 
+    id="input" 
+    rows="1" 
+    placeholder="Type command..." 
+    enterkeyhint="send"
+  ></textarea>
+  <button id="sendBtn">↑</button>
+</div>
+
+<script>
+
+/* ===========================================================
+   STEP 1 — DYNAMIC VH FIX (Android keyboard stability)
+   =========================================================== */
+function updateVH() {
+  document.documentElement.style.setProperty(
+    '--vh',
+    (window.innerHeight * 0.01) + 'px'
+  );
+}
+updateVH();
+window.addEventListener('resize', updateVH);
+
+/* ===========================================================
+   STEP 1 — INPUT BAR HEIGHT TRACKING
+   Makes output padding follow input bar size (prevents jump)
+   =========================================================== */
+function updateInputBarHeight() {
+  const bar = document.getElementById('inputBar');
+  const h = bar.offsetHeight;
+  document.documentElement.style.setProperty('--input-bar-height', h + 'px');
+}
+setInterval(updateInputBarHeight, 200);
+
+
+/* ===========================================================
+   ORIGINAL APP LOGIC (unchanged)
+   =========================================================== */
+
+const input = document.getElementById("input");
+const output = document.getElementById("output");
+const sendBtn = document.getElementById("sendBtn");
+
+function autoResize() {
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
+}
+
+input.addEventListener("input", autoResize);
+
+function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+
+  const div = document.createElement("div");
+  div.textContent = "> " + text;
+  output.appendChild(div);
+
+  input.value = "";
+  autoResize();
+  output.scrollTop = output.scrollHeight;
+}
+
+sendBtn.addEventListener("click", sendMessage);
+
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW error:", err));
+}
+
+</script>
+
+</body>
+</html>  white-space: pre-wrap;
   word-break: break-word;
 }
 
