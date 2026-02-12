@@ -121,7 +121,15 @@ function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 
+<script>
+...your existing JS...
 
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW error:", err));
+}
 </script>
 
 </body>
