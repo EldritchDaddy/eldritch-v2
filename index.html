@@ -143,28 +143,24 @@ function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 
-/* === Viewport Stabilizer (reduces snap-back) === */
-let previousHeight = window.innerHeight;
-let previousScrollRatio = 1;
+/* === Resize Stabilizer (NO layout change) === */
+
+let lastScrollTop = 0;
+let resizing = false;
+
+output.addEventListener("scroll", () => {
+  if (!resizing) {
+    lastScrollTop = output.scrollTop;
+  }
+});
 
 window.addEventListener("resize", () => {
-  const newHeight = window.innerHeight;
-
-  // Capture relative scroll position
-  if (output.scrollHeight > output.clientHeight) {
-    previousScrollRatio =
-      output.scrollTop / (output.scrollHeight - output.clientHeight);
-  }
+  resizing = true;
 
   requestAnimationFrame(() => {
-    if (output.scrollHeight > output.clientHeight) {
-      const newScroll =
-        (output.scrollHeight - output.clientHeight) * previousScrollRatio;
-      output.scrollTop = newScroll;
-    }
+    output.scrollTop = lastScrollTop;
+    resizing = false;
   });
-
-  previousHeight = newHeight;
 });
 
 // Register Service Worker
@@ -174,6 +170,5 @@ if ('serviceWorker' in navigator) {
     .catch(err => console.log("SW error:", err));
 }
 </script>
-
 </body>
 </html>
