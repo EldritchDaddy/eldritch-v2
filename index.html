@@ -1,80 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="/eldritch-v2/manifest.json">
-<meta charset="utf-8">
 
 <style>
-/* ==========================================================
-   ANDROID KEYBOARD NUCLEAR FIX — PWA SAFE BUILD
-   ========================================================== */
+/* ===============================
+   CLEAN RESIZE-AWARE LAYOUT
+   =============================== */
 
-/* Base locks */
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  width: 100%;
-
   background: black;
   color: #00ff00;
   font-family: monospace;
+}
 
-  position: fixed;       /* prevent keyboard reflow */
-  overflow: hidden;      /* stop body scroll */
-  overscroll-behavior: none;
+body {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Main container */
 #container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  overflow: hidden;
 }
 
-/* ==========================================================
-   SCROLL REGION — FIXED INDEPENDENT LAYER
-   ========================================================== */
+/* Scrollable output */
 #output {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--input-bar-height, 80px) + env(safe-area-inset-bottom));
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-
   padding: 16px;
-  padding-bottom: 20px;
-
+  padding-bottom: 80px; /* space for input */
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* ==========================================================
-   INPUT BAR — PINNED TO BOTTOM
-   ========================================================== */
+/* Input bar */
 #inputBar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-
   display: flex;
   align-items: flex-end;
   padding: 10px;
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
-
   background: #111;
   border-top: 1px solid #222;
-
-  z-index: 999;
 }
 
 /* Textarea */
@@ -84,14 +64,11 @@ html, body {
   border: none;
   outline: none;
   background: transparent;
-
   color: #00ff00;
   font-size: 16px;
   line-height: 1.4;
-
   max-height: 120px;
   overflow-y: auto;
-
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -120,7 +97,7 @@ If you can read this, evolution has begun.
 
 <div id="inputBar">
   <textarea 
-    id="input" 
+    id="input"
     rows="1"
     placeholder="Type command..."
     enterkeyhint="send"
@@ -129,22 +106,7 @@ If you can read this, evolution has begun.
 </div>
 
 <script>
-/* ==========================================================
-   STEP 1 — INPUT BAR HEIGHT TRACKER
-   ========================================================== */
-function updateInputBarHeight() {
-  const bar = document.getElementById("inputBar");
-  document.documentElement.style.setProperty(
-    "--input-bar-height",
-    bar.offsetHeight + "px"
-  );
-}
-setInterval(updateInputBarHeight, 200);
-
-/* ==========================================================
-   ORIGINAL APP LOGIC
-   ========================================================== */
-const input  = document.getElementById("input");
+const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
@@ -169,14 +131,8 @@ function sendMessage() {
 }
 sendBtn.addEventListener("click", sendMessage);
 
-/* ==========================================================
-   SERVICE WORKER REGISTRATION
-   ========================================================== */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/eldritch-v2/service-worker.js")
-    .then(() => console.log("SW registered"))
-    .catch(err => console.log("SW error:", err));
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
 }
 </script>
 
