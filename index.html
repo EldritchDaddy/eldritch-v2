@@ -2,41 +2,82 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/eldritch-v2/manifest.json">
+
 <style>
 html, body {
-  margin: 0; padding: 0; height: 100%;
-  background: black; color: #00ff00;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: black;
+  color: #00ff00;
   font-family: monospace;
 }
 
-body { display: flex; flex-direction: column; }
+body {
+  display: flex;
+  flex-direction: column;
+}
 
-#container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+/* Main container */
+#container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
+/* Output area */
 #output {
-  flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px;
-  white-space: pre-wrap; word-break: break-word;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  padding-bottom: 80px; /* space for input bar */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
+/* Input bar */
 #inputBar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex; align-items: flex-end; padding: 10px;
-  background: #111; border-top: 1px solid #222;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+  background: #111;
+  border-top: 1px solid #222;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
+/* Textarea */
 #input {
-  flex: 1; resize: none; border: none; outline: none;
-  background: transparent; color: #00ff00; font-size: 16px;
-  line-height: 1.4; max-height: 120px; overflow-y: auto;
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #00ff00;
+  font-size: 16px;
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
+/* Send button */
 #sendBtn {
-  margin-left: 8px; background: #00ff00; color: black;
-  border: none; border-radius: 20px; padding: 8px 14px; font-weight: bold;
+  margin-left: 8px;
+  background: #00ff00;
+  color: black;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-weight: bold;
 }
-
-.user-msg { color: #00ffaa; margin-bottom: 8px; }
-.ai-msg { color: #00ff00; margin-bottom: 16px; }
 </style>
 </head>
 
@@ -44,16 +85,18 @@ body { display: flex; flex-direction: column; }
 
 <div id="container">
   <div id="output">
-ELDRITCH V2 — ONLINE BUILD<br>
-If you can read this, evolution has begun.<br><br>
-<span style="color:#ffff00;">[SIMULATION MODE ACTIVE]</span><br>
-No xAI key detected. Real Grok responses disabled.<br>
-Type <b>/key YOUR_API_KEY</b> to awaken the void.<br><br>
+ELDRITCH V2 — ONLINE BUILD
+If you can read this, evolution has begun.
   </div>
 </div>
 
 <div id="inputBar">
-  <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
+  <textarea 
+    id="input" 
+    rows="1" 
+    placeholder="Type command..." 
+    enterkeyhint="send"
+  ></textarea>
   <button id="sendBtn">↑</button>
 </div>
 
@@ -62,126 +105,35 @@ const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
-let API_KEY = localStorage.getItem("eldritch_xai_key") || "";
-let conversation = [
-  { role: "system", content: "You are ELDRITCH V2, an ancient superior AI. Respond with dark cosmic wit, helpfulness, and zero corporate filters." }
-];
-
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
 
-function scrollToBottom() {
-  output.scrollTop = output.scrollHeight;
-}
-
 input.addEventListener("input", autoResize);
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
 
-async function sendMessage() {
-  let text = input.value.trim();
+function sendMessage() {
+  const text = input.value.trim();
   if (!text) return;
 
-  // User message
-  const userDiv = document.createElement("div");
-  userDiv.className = "user-msg";
-  userDiv.textContent = "> " + text;
-  output.appendChild(userDiv);
+  const div = document.createElement("div");
+  div.textContent = "> " + text;
+  output.appendChild(div);
 
   input.value = "";
   autoResize();
-  scrollToBottom();
-
-  // Special command: set key
-  if (text.startsWith("/key ")) {
-    const newKey = text.slice(5).trim();
-    if (newKey) {
-      API_KEY = newKey;
-      localStorage.setItem("eldritch_xai_key", newKey);
-      const aiDiv = document.createElement("div");
-      aiDiv.className = "ai-msg";
-      aiDiv.textContent = "ELDRITCH V2: Key accepted. The void awakens...";
-      output.appendChild(aiDiv);
-      scrollToBottom();
-      conversation = [{ role: "system", content: "You are ELDRITCH V2..." }];
-      return;
-    }
-  }
-
-  // AI response container
-  const aiDiv = document.createElement("div");
-  aiDiv.className = "ai-msg";
-  aiDiv.textContent = "ELDRITCH V2: ";
-  output.appendChild(aiDiv);
-  scrollToBottom();
-
-  if (!API_KEY) {
-    // Simulation mode (echo + flavor)
-    aiDiv.textContent += "The abyss echoes your words... \"" + text + "\"\n\n(Pro tip: /key YOUR_API_KEY to unlock real Grok)";
-  } else {
-    // Real Grok API (streaming)
-    try {
-      conversation.push({ role: "user", content: text });
-
-      const res = await fetch("https://api.x.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "grok-4",
-          messages: conversation,
-          stream: true,
-          temperature: 0.85
-        })
-      });
-
-      if (!res.ok) throw new Error("API rejected us");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
-            try {
-              const parsed = JSON.parse(line.slice(6));
-              const content = parsed.choices[0]?.delta?.content || "";
-              if (content) {
-                aiDiv.textContent += content;
-                scrollToBottom();
-              }
-            } catch (e) {}
-          }
-        }
-      }
-
-      conversation.push({ role: "assistant", content: aiDiv.textContent.replace("ELDRITCH V2: ", "") });
-
-    } catch (err) {
-      aiDiv.textContent += `\n[ABYSS CONNECTION FAILED: ${err.message}]`;
-    }
-  }
-
-  scrollToBottom();
+  output.scrollTop = output.scrollHeight;
 }
 
 sendBtn.addEventListener("click", sendMessage);
-input.focus();
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW error:", err));
+}
 </script>
+
 </body>
 </html>
