@@ -1,58 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="/eldritch-v2/manifest.json">
+<meta charset="utf-8">
 
 <style>
-
 /* ==========================================================
-   STEP 1 — DYNAMIC VIEWPORT HEIGHT (ANTI-ANDROID-JUMP FIX)
+   ANDROID KEYBOARD NUCLEAR FIX — PWA SAFE BUILD
    ========================================================== */
-:root {
-  --vh: 1vh; /* overwritten by JS */
-  --input-bar-height: 80px; /* fallback */
-}
 
-/* Base layout */
+/* Base locks */
 html, body {
   margin: 0;
   padding: 0;
-
-  /* Lock the viewport height so keyboard cannot shrink it */
-  height: calc(var(--vh) * 100);
+  height: 100%;
+  width: 100%;
 
   background: black;
   color: #00ff00;
   font-family: monospace;
 
-  overflow: hidden; /* prevent reflow during keyboard open */
-  overscroll-behavior-y: contain; /* prevents bouncing + resize */
-}
-
-body {
-  display: flex;
-  flex-direction: column;
+  position: fixed;       /* prevent keyboard reflow */
+  overflow: hidden;      /* stop body scroll */
+  overscroll-behavior: none;
 }
 
 /* Main container */
 #container {
-  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  justify-content: flex-start;
 }
 
 /* ==========================================================
-   SCROLL REGION — DO NOT MOVE WHEN KEYBOARD OPENS
+   SCROLL REGION — FIXED INDEPENDENT LAYER
    ========================================================== */
 #output {
-  flex: 1;
-
-  /* Override Android viewport shrinking completely */
-  height: calc(var(--vh) * 100 - var(--input-bar-height));
-  max-height: calc(var(--vh) * 100 - var(--input-bar-height));
-
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--input-bar-height, 80px) + env(safe-area-inset-bottom));
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -64,7 +58,7 @@ body {
 }
 
 /* ==========================================================
-   INPUT BAR — FIXED TO SCREEN BOTTOM ALWAYS
+   INPUT BAR — PINNED TO BOTTOM
    ========================================================== */
 #inputBar {
   position: fixed;
@@ -74,7 +68,6 @@ body {
 
   display: flex;
   align-items: flex-end;
-
   padding: 10px;
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
 
@@ -90,10 +83,9 @@ body {
   resize: none;
   border: none;
   outline: none;
-
   background: transparent;
-  color: #00ff00;
 
+  color: #00ff00;
   font-size: 16px;
   line-height: 1.4;
 
@@ -111,11 +103,9 @@ body {
   color: black;
   border: none;
   border-radius: 20px;
-
   padding: 8px 14px;
   font-weight: bold;
 }
-
 </style>
 </head>
 
@@ -139,31 +129,9 @@ If you can read this, evolution has begun.
 </div>
 
 <script>
-
-/* ============================================
-   STEP 1 — VH UPDATE FUNCTION
-   ============================================ */
-function updateVH() {
-  document.documentElement.style.setProperty(
-    '--vh',
-    (window.innerHeight * 0.01) + 'px'
-  );
-}
-updateVH();
-window.addEventListener("resize", updateVH);
-
-/* ============================================
-   STEP 1 — MODERN ANDROID FIX (visualViewport)
-   ============================================ */
-if (window.visualViewport) {
-  window.visualViewport.addEventListener("resize", () => {
-    updateVH();
-  });
-}
-
-/* ============================================
-   STEP 1 — INPUT BAR HEIGHT TRACKING
-   ============================================ */
+/* ==========================================================
+   STEP 1 — INPUT BAR HEIGHT TRACKER
+   ========================================================== */
 function updateInputBarHeight() {
   const bar = document.getElementById("inputBar");
   document.documentElement.style.setProperty(
@@ -173,10 +141,10 @@ function updateInputBarHeight() {
 }
 setInterval(updateInputBarHeight, 200);
 
-/* ============================================
+/* ==========================================================
    ORIGINAL APP LOGIC
-   ============================================ */
-const input = document.getElementById("input");
+   ========================================================== */
+const input  = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
@@ -184,7 +152,6 @@ function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
-
 input.addEventListener("input", autoResize);
 
 function sendMessage() {
@@ -200,16 +167,17 @@ function sendMessage() {
 
   output.scrollTop = output.scrollHeight;
 }
-
 sendBtn.addEventListener("click", sendMessage);
 
-/* Service Worker */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+/* ==========================================================
+   SERVICE WORKER REGISTRATION
+   ========================================================== */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/eldritch-v2/service-worker.js")
     .then(() => console.log("SW registered"))
     .catch(err => console.log("SW error:", err));
 }
-
 </script>
 
 </body>
