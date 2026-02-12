@@ -12,26 +12,33 @@ html, body {
   background: black;
   color: #00ff00;
   font-family: monospace;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main container */
+#container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-#container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh; /* stable */
-}
-
+/* Output area */
 #output {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
+  padding-bottom: 80px; /* space for input bar */
   white-space: pre-wrap;
   word-break: break-word;
-
-  margin-bottom: 70px; /* prevents overlap with input bar */
 }
 
+/* Input bar */
 #inputBar {
   position: fixed;
   bottom: 0;
@@ -42,8 +49,10 @@ html, body {
   padding: 10px;
   background: #111;
   border-top: 1px solid #222;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
+/* Textarea */
 #input {
   flex: 1;
   resize: none;
@@ -59,6 +68,7 @@ html, body {
   word-break: break-word;
 }
 
+/* Send button */
 #sendBtn {
   margin-left: 8px;
   background: #00ff00;
@@ -84,7 +94,8 @@ If you can read this, evolution has begun.
   <textarea 
     id="input" 
     rows="1" 
-    placeholder="Type command..."
+    placeholder="Type command..." 
+    enterkeyhint="send"
   ></textarea>
   <button id="sendBtn">↑</button>
 </div>
@@ -116,9 +127,11 @@ function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 
-// Service Worker
+// Register Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW error:", err));
 }
 </script>
 
