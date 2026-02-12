@@ -6,25 +6,28 @@
 
 <style>
 
-/* ================================
-   DYNAMIC VIEWPORT LOCK (STEP 1)
-   ================================ */
+/* ==========================================================
+   STEP 1 — DYNAMIC VIEWPORT HEIGHT (ANTI-ANDROID-JUMP FIX)
+   ========================================================== */
 :root {
-  --vh: 1vh; /* replaced by JS dynamically */
+  --vh: 1vh; /* overwritten by JS */
+  --input-bar-height: 80px; /* fallback */
 }
 
+/* Base layout */
 html, body {
   margin: 0;
   padding: 0;
 
-  /* Lock height to dynamic viewport */
+  /* Lock the viewport height so keyboard cannot shrink it */
   height: calc(var(--vh) * 100);
 
   background: black;
   color: #00ff00;
   font-family: monospace;
 
-  overflow: hidden; /* Prevent Android keyboard push */
+  overflow: hidden; /* prevent reflow during keyboard open */
+  overscroll-behavior-y: contain; /* prevents bouncing + resize */
 }
 
 body {
@@ -40,26 +43,29 @@ body {
   overflow: hidden;
 }
 
-/* ================================
-   TRUE SCROLL REGION (STEP 1)
-   ================================ */
+/* ==========================================================
+   SCROLL REGION — DO NOT MOVE WHEN KEYBOARD OPENS
+   ========================================================== */
 #output {
   flex: 1;
+
+  /* Override Android viewport shrinking completely */
+  height: calc(var(--vh) * 100 - var(--input-bar-height));
+  max-height: calc(var(--vh) * 100 - var(--input-bar-height));
+
   overflow-y: auto;
   overflow-x: hidden;
 
   padding: 16px;
-
-  /* Dynamic padding equal to input bar height */
-  padding-bottom: calc(var(--input-bar-height, 80px) + 8px);
+  padding-bottom: 20px;
 
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* ================================
-   INPUT BAR LOCKED TO BOTTOM
-   ================================ */
+/* ==========================================================
+   INPUT BAR — FIXED TO SCREEN BOTTOM ALWAYS
+   ========================================================== */
 #inputBar {
   position: fixed;
   bottom: 0;
@@ -68,13 +74,14 @@ body {
 
   display: flex;
   align-items: flex-end;
+
   padding: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 
   background: #111;
   border-top: 1px solid #222;
 
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  z-index: 999; /* Keep above all content */
+  z-index: 999;
 }
 
 /* Textarea */
@@ -83,9 +90,10 @@ body {
   resize: none;
   border: none;
   outline: none;
-  background: transparent;
 
+  background: transparent;
   color: #00ff00;
+
   font-size: 16px;
   line-height: 1.4;
 
@@ -132,9 +140,9 @@ If you can read this, evolution has begun.
 
 <script>
 
-/* ==============================================
-   STEP 1 — DYNAMIC VH FIX (Android keyboard)
-   ============================================== */
+/* ============================================
+   STEP 1 — VH UPDATE FUNCTION
+   ============================================ */
 function updateVH() {
   document.documentElement.style.setProperty(
     '--vh',
@@ -142,24 +150,32 @@ function updateVH() {
   );
 }
 updateVH();
-window.addEventListener('resize', updateVH);
+window.addEventListener("resize", updateVH);
 
-/* ==============================================
+/* ============================================
+   STEP 1 — MODERN ANDROID FIX (visualViewport)
+   ============================================ */
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    updateVH();
+  });
+}
+
+/* ============================================
    STEP 1 — INPUT BAR HEIGHT TRACKING
-   ============================================== */
+   ============================================ */
 function updateInputBarHeight() {
-  const bar = document.getElementById('inputBar');
+  const bar = document.getElementById("inputBar");
   document.documentElement.style.setProperty(
-    '--input-bar-height',
-    bar.offsetHeight + 'px'
+    "--input-bar-height",
+    bar.offsetHeight + "px"
   );
 }
 setInterval(updateInputBarHeight, 200);
 
-/* ==============================================
+/* ============================================
    ORIGINAL APP LOGIC
-   ============================================== */
-
+   ============================================ */
 const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
@@ -187,7 +203,7 @@ function sendMessage() {
 
 sendBtn.addEventListener("click", sendMessage);
 
-// Register Service Worker
+/* Service Worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
     .then(() => console.log("SW registered"))
