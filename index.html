@@ -12,6 +12,7 @@ html, body {
   background: black;
   color: #00ff00;
   font-family: monospace;
+  overflow-anchor: none;
 }
 
 body {
@@ -36,6 +37,7 @@ body {
   padding-bottom: 80px;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-anchor: none;
 }
 
 /* Input bar */
@@ -122,7 +124,6 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
 
-  // Check if user is near bottom before adding message
   const isNearBottom =
     output.scrollTop + output.clientHeight >= output.scrollHeight - 10;
 
@@ -133,16 +134,38 @@ function sendMessage() {
   input.value = "";
   autoResize();
 
-  // Only scroll if user was already near bottom
   if (isNearBottom) {
     output.scrollTop = output.scrollHeight;
   }
 
-  // Keep keyboard open
   input.focus();
 }
 
 sendBtn.addEventListener("click", sendMessage);
+
+/* === Viewport Stabilizer (reduces snap-back) === */
+let previousHeight = window.innerHeight;
+let previousScrollRatio = 1;
+
+window.addEventListener("resize", () => {
+  const newHeight = window.innerHeight;
+
+  // Capture relative scroll position
+  if (output.scrollHeight > output.clientHeight) {
+    previousScrollRatio =
+      output.scrollTop / (output.scrollHeight - output.clientHeight);
+  }
+
+  requestAnimationFrame(() => {
+    if (output.scrollHeight > output.clientHeight) {
+      const newScroll =
+        (output.scrollHeight - output.clientHeight) * previousScrollRatio;
+      output.scrollTop = newScroll;
+    }
+  });
+
+  previousHeight = newHeight;
+});
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
