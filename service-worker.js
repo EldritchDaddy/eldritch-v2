@@ -1,8 +1,11 @@
-const CACHE_NAME = "eldritch-v5-cache";
+const CACHE_NAME = "eldritch-v6-cache";
+
 const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json"
+  "/eldritch-v2/",
+  "/eldritch-v2/index.html",
+  "/eldritch-v2/manifest.json",
+  "/eldritch-v2/icon-192.png",
+  "/eldritch-v2/icon-512.png"
 ];
 
 // Install
@@ -15,7 +18,7 @@ self.addEventListener("install", event => {
   );
 });
 
-// Activate (delete old caches)
+// Activate
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
