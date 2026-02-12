@@ -8,28 +8,37 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100dvh;
+  height: 100%;
   background: black;
   color: #00ff00;
   font-family: monospace;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main container */
+#container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-#container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
+/* Output area */
 #output {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden; /* 🔥 prevent horizontal scroll */
+  overflow-x: hidden;
   padding: 16px;
-  white-space: pre-wrap; /* preserve line breaks */
-  word-break: break-word; /* break long words */
+  padding-bottom: 80px; /* space for input bar */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
+/* Input bar */
 #inputBar {
   position: fixed;
   bottom: 0;
@@ -43,6 +52,7 @@ html, body {
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
+/* Textarea */
 #input {
   flex: 1;
   resize: none;
@@ -54,11 +64,11 @@ html, body {
   line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
-
-  white-space: pre-wrap;   /* 🔥 allow stacking */
-  word-break: break-word;  /* 🔥 prevent horizontal growth */
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
+/* Send button */
 #sendBtn {
   margin-left: 8px;
   background: #00ff00;
@@ -68,7 +78,6 @@ html, body {
   padding: 8px 14px;
   font-weight: bold;
 }
-
 </style>
 </head>
 
@@ -96,7 +105,6 @@ const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
-/* Auto grow textarea */
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
@@ -104,7 +112,6 @@ function autoResize() {
 
 input.addEventListener("input", autoResize);
 
-/* Send message */
 function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -115,18 +122,10 @@ function sendMessage() {
 
   input.value = "";
   autoResize();
-
   output.scrollTop = output.scrollHeight;
 }
 
 sendBtn.addEventListener("click", sendMessage);
-
-/* Enter submits */
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
