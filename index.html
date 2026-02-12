@@ -9,24 +9,18 @@
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
   background: black;
   color: #00ff00;
   font-family: monospace;
+  overflow: hidden;
 }
 
-body {
+/* Fullscreen app container using dynamic viewport height */
+#app {
+  position: relative;
+  height: 100dvh; /* dynamic viewport height */
   display: flex;
   flex-direction: column;
-  height: 100%;
-}
-
-/* Main container */
-#container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0; /* critical for flex scrolling */
 }
 
 /* Scrollable output */
@@ -35,12 +29,17 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
+  padding-bottom: 80px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-/* Input bar (NOT fixed anymore) */
+/* Input bar */
 #inputBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-end;
   padding: 10px;
@@ -80,7 +79,7 @@ body {
 
 <body>
 
-<div id="container">
+<div id="app">
   <div id="output">
 ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
