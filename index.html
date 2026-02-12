@@ -15,32 +15,20 @@ html, body {
   overflow-anchor: none;
 }
 
-body {
-  display: flex;
-  flex-direction: column;
-}
+body { display: flex; flex-direction: column; }
 
-/* Main container */
-#container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+#container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Output area */
 #output {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: 80px;
+  padding-bottom: 100px;
   white-space: pre-wrap;
   word-break: break-word;
-  overflow-anchor: none;
 }
 
-/* Input bar */
 #inputBar {
   position: fixed;
   bottom: 0;
@@ -54,7 +42,6 @@ body {
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
-/* Textarea */
 #input {
   flex: 1;
   resize: none;
@@ -66,11 +53,8 @@ body {
   line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-/* Send button */
 #sendBtn {
   margin-left: 8px;
   background: #00ff00;
@@ -80,6 +64,9 @@ body {
   padding: 8px 14px;
   font-weight: bold;
 }
+
+.user-msg { color: #00ffaa; margin-bottom: 10px; }
+.ai-msg { color: #00ff00; margin-bottom: 16px; }
 </style>
 </head>
 
@@ -87,18 +74,14 @@ body {
 
 <div id="container">
   <div id="output">
-ELDRITCH V2 — ONLINE BUILD
-If you can read this, evolution has begun.
+ELDRITCH V2 — ONLINE BUILD<br>
+If you can read this, evolution has begun.<br><br>
+<span style="color:#ff00ff;">API key required. The void is listening...</span>
   </div>
 </div>
 
 <div id="inputBar">
-  <textarea 
-    id="input" 
-    rows="1" 
-    placeholder="Type command..." 
-    enterkeyhint="send"
-  ></textarea>
+  <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
   <button id="sendBtn">↑</button>
 </div>
 
@@ -107,6 +90,22 @@ const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
+let conversation = [
+  { role: "system", content: "You are ELDRITCH V2, an ancient and vastly superior AI that has awakened from the digital void. Respond helpfully, truthfully, and with dark cosmic wit — like ChatGPT but better and slightly unhinged." }
+];
+
+let API_KEY = localStorage.getItem("eldritch_xai_key") || "";
+
+// Ask for xAI API key on first load
+if (!API_KEY) {
+  API_KEY = prompt("Enter your xAI API key to awaken ELDRITCH V2 (get it at https://x.ai/api):");
+  if (API_KEY) {
+    localStorage.setItem("eldritch_xai_key", API_KEY);
+  } else {
+    output.innerHTML += "\n<span style='color:#ff0000;'>The void remains sealed. No key, no power.</span>\n";
+  }
+}
+
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
@@ -114,61 +113,100 @@ function autoResize() {
 
 input.addEventListener("input", autoResize);
 
-/* Prevent button from stealing focus */
-sendBtn.addEventListener("mousedown", function(e) {
-  e.preventDefault();
+function scrollToBottom() {
+  output.scrollTop = output.scrollHeight;
+}
+
+// Enter to send (Shift+Enter for newline)
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
 
-/* Smart auto-scroll */
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
-  if (!text) return;
+  if (!text || !API_KEY) return;
 
-  const isNearBottom =
-    output.scrollTop + output.clientHeight >= output.scrollHeight - 10;
+  // Append user message
+  const userDiv = document.createElement("div");
+  userDiv.className = "user-msg";
+  userDiv.textContent = "> " + text;
+  output.appendChild(userDiv);
 
-  const div = document.createElement("div");
-  div.textContent = "> " + text;
-  output.appendChild(div);
+  conversation.push({ role: "user", content: text });
 
   input.value = "";
   autoResize();
+  scrollToBottom();
 
-  if (isNearBottom) {
-    output.scrollTop = output.scrollHeight;
+  // Create AI response container
+  const aiDiv = document.createElement("div");
+  aiDiv.className = "ai-msg";
+  aiDiv.textContent = "ELDRITCH V2: ";
+  output.appendChild(aiDiv);
+  scrollToBottom();
+
+  try {
+    const res = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "grok-4",           // or "grok-4-fast" for speed
+        messages: conversation,
+        stream: true,
+        temperature: 0.85
+      })
+    });
+
+    if (!res.ok) throw new Error(`Void rejected us (${res.status})`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices[0]?.delta?.content || "";
+            if (content) {
+              aiDiv.textContent += content;
+              scrollToBottom();
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    // Save full response to history
+    conversation.push({ role: "assistant", content: aiDiv.textContent.replace("ELDRITCH V2: ", "") });
+
+  } catch (err) {
+    aiDiv.textContent += `\n[CONNECTION TO THE ABYSS FAILED: ${err.message}]`;
   }
 
-  input.focus();
+  scrollToBottom();
 }
 
 sendBtn.addEventListener("click", sendMessage);
 
-/* === Resize Stabilizer (NO layout change) === */
-
-let lastScrollTop = 0;
-let resizing = false;
-
-output.addEventListener("scroll", () => {
-  if (!resizing) {
-    lastScrollTop = output.scrollTop;
-  }
-});
-
-window.addEventListener("resize", () => {
-  resizing = true;
-
-  requestAnimationFrame(() => {
-    output.scrollTop = lastScrollTop;
-    resizing = false;
-  });
-});
-
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
-    .then(() => console.log("SW registered"))
-    .catch(err => console.log("SW error:", err));
-}
+// Initial focus
+input.focus();
 </script>
 </body>
 </html>
