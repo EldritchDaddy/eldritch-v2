@@ -9,18 +9,24 @@
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
   background: black;
   color: #00ff00;
   font-family: monospace;
-  overflow: hidden;
 }
 
-/* Fullscreen app container using dynamic viewport height */
-#app {
-  position: relative;
-  height: 100dvh; /* dynamic viewport height */
+body {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+
+/* Main container */
+#container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* Scrollable output */
@@ -29,17 +35,12 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: 80px;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 /* Input bar */
 #inputBar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: flex-end;
   padding: 10px;
@@ -79,7 +80,7 @@ html, body {
 
 <body>
 
-<div id="app">
+<div id="container">
   <div id="output">
 ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
@@ -97,16 +98,23 @@ If you can read this, evolution has begun.
 </div>
 
 <script>
-const input = document.getElementById("input");
+const input  = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
+/* Auto resize textarea */
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
 input.addEventListener("input", autoResize);
 
+/* Prevent button from stealing focus */
+sendBtn.addEventListener("mousedown", function(e) {
+  e.preventDefault();
+});
+
+/* Send message */
 function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -116,12 +124,17 @@ function sendMessage() {
   output.appendChild(div);
 
   input.value = "";
-  autoResize();
+  input.style.height = "auto";
 
   output.scrollTop = output.scrollHeight;
+
+  // KEEP KEYBOARD OPEN
+  input.focus();
 }
+
 sendBtn.addEventListener("click", sendMessage);
 
+/* Service Worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
 }
