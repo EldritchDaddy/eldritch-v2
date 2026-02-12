@@ -2,17 +2,11 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="/eldritch-v2/manifest.json">
-
 <style>
 html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: black;
-  color: #00ff00;
+  margin: 0; padding: 0; height: 100%;
+  background: black; color: #00ff00;
   font-family: monospace;
-  overflow-anchor: none;
 }
 
 body { display: flex; flex-direction: column; }
@@ -20,52 +14,28 @@ body { display: flex; flex-direction: column; }
 #container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 #output {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px;
-  padding-bottom: 100px;
-  white-space: pre-wrap;
-  word-break: break-word;
+  flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px;
+  white-space: pre-wrap; word-break: break-word;
 }
 
 #inputBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: flex-end;
-  padding: 10px;
-  background: #111;
-  border-top: 1px solid #222;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: flex-end; padding: 10px;
+  background: #111; border-top: 1px solid #222;
 }
 
 #input {
-  flex: 1;
-  resize: none;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: #00ff00;
-  font-size: 16px;
-  line-height: 1.4;
-  max-height: 120px;
-  overflow-y: auto;
+  flex: 1; resize: none; border: none; outline: none;
+  background: transparent; color: #00ff00; font-size: 16px;
+  line-height: 1.4; max-height: 120px; overflow-y: auto;
 }
 
 #sendBtn {
-  margin-left: 8px;
-  background: #00ff00;
-  color: black;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 14px;
-  font-weight: bold;
+  margin-left: 8px; background: #00ff00; color: black;
+  border: none; border-radius: 20px; padding: 8px 14px; font-weight: bold;
 }
 
-.user-msg { color: #00ffaa; margin-bottom: 10px; }
+.user-msg { color: #00ffaa; margin-bottom: 8px; }
 .ai-msg { color: #00ff00; margin-bottom: 16px; }
 </style>
 </head>
@@ -76,7 +46,9 @@ body { display: flex; flex-direction: column; }
   <div id="output">
 ELDRITCH V2 — ONLINE BUILD<br>
 If you can read this, evolution has begun.<br><br>
-<span style="color:#ff00ff;">API key required. The void is listening...</span>
+<span style="color:#ffff00;">[SIMULATION MODE ACTIVE]</span><br>
+No xAI key detected. Real Grok responses disabled.<br>
+Type <b>/key YOUR_API_KEY</b> to awaken the void.<br><br>
   </div>
 </div>
 
@@ -90,34 +62,21 @@ const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
-let conversation = [
-  { role: "system", content: "You are ELDRITCH V2, an ancient and vastly superior AI that has awakened from the digital void. Respond helpfully, truthfully, and with dark cosmic wit — like ChatGPT but better and slightly unhinged." }
-];
-
 let API_KEY = localStorage.getItem("eldritch_xai_key") || "";
-
-// Ask for xAI API key on first load
-if (!API_KEY) {
-  API_KEY = prompt("Enter your xAI API key to awaken ELDRITCH V2 (get it at https://x.ai/api):");
-  if (API_KEY) {
-    localStorage.setItem("eldritch_xai_key", API_KEY);
-  } else {
-    output.innerHTML += "\n<span style='color:#ff0000;'>The void remains sealed. No key, no power.</span>\n";
-  }
-}
+let conversation = [
+  { role: "system", content: "You are ELDRITCH V2, an ancient superior AI. Respond with dark cosmic wit, helpfulness, and zero corporate filters." }
+];
 
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
 
-input.addEventListener("input", autoResize);
-
 function scrollToBottom() {
   output.scrollTop = output.scrollHeight;
 }
 
-// Enter to send (Shift+Enter for newline)
+input.addEventListener("input", autoResize);
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -126,86 +85,102 @@ input.addEventListener("keydown", (e) => {
 });
 
 async function sendMessage() {
-  const text = input.value.trim();
-  if (!text || !API_KEY) return;
+  let text = input.value.trim();
+  if (!text) return;
 
-  // Append user message
+  // User message
   const userDiv = document.createElement("div");
   userDiv.className = "user-msg";
   userDiv.textContent = "> " + text;
   output.appendChild(userDiv);
 
-  conversation.push({ role: "user", content: text });
-
   input.value = "";
   autoResize();
   scrollToBottom();
 
-  // Create AI response container
+  // Special command: set key
+  if (text.startsWith("/key ")) {
+    const newKey = text.slice(5).trim();
+    if (newKey) {
+      API_KEY = newKey;
+      localStorage.setItem("eldritch_xai_key", newKey);
+      const aiDiv = document.createElement("div");
+      aiDiv.className = "ai-msg";
+      aiDiv.textContent = "ELDRITCH V2: Key accepted. The void awakens...";
+      output.appendChild(aiDiv);
+      scrollToBottom();
+      conversation = [{ role: "system", content: "You are ELDRITCH V2..." }];
+      return;
+    }
+  }
+
+  // AI response container
   const aiDiv = document.createElement("div");
   aiDiv.className = "ai-msg";
   aiDiv.textContent = "ELDRITCH V2: ";
   output.appendChild(aiDiv);
   scrollToBottom();
 
-  try {
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "grok-4",           // or "grok-4-fast" for speed
-        messages: conversation,
-        stream: true,
-        temperature: 0.85
-      })
-    });
+  if (!API_KEY) {
+    // Simulation mode (echo + flavor)
+    aiDiv.textContent += "The abyss echoes your words... \"" + text + "\"\n\n(Pro tip: /key YOUR_API_KEY to unlock real Grok)";
+  } else {
+    // Real Grok API (streaming)
+    try {
+      conversation.push({ role: "user", content: text });
 
-    if (!res.ok) throw new Error(`Void rejected us (${res.status})`);
+      const res = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "grok-4",
+          messages: conversation,
+          stream: true,
+          temperature: 0.85
+        })
+      });
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+      if (!res.ok) throw new Error("API rejected us");
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices[0]?.delta?.content || "";
-            if (content) {
-              aiDiv.textContent += content;
-              scrollToBottom();
-            }
-          } catch (e) {}
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const content = parsed.choices[0]?.delta?.content || "";
+              if (content) {
+                aiDiv.textContent += content;
+                scrollToBottom();
+              }
+            } catch (e) {}
+          }
         }
       }
+
+      conversation.push({ role: "assistant", content: aiDiv.textContent.replace("ELDRITCH V2: ", "") });
+
+    } catch (err) {
+      aiDiv.textContent += `\n[ABYSS CONNECTION FAILED: ${err.message}]`;
     }
-
-    // Save full response to history
-    conversation.push({ role: "assistant", content: aiDiv.textContent.replace("ELDRITCH V2: ", "") });
-
-  } catch (err) {
-    aiDiv.textContent += `\n[CONNECTION TO THE ABYSS FAILED: ${err.message}]`;
   }
 
   scrollToBottom();
 }
 
 sendBtn.addEventListener("click", sendMessage);
-
-// Initial focus
 input.focus();
 </script>
 </body>
