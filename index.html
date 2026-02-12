@@ -13,41 +13,34 @@ html, body {
   background: black;
   color: #00ff00;
   font-family: monospace;
-
-  /* Disable scroll anchoring */
-  overflow-anchor: none;
 }
 
 body {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
+/* Main container */
 #container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0; /* critical for flex scrolling */
 }
 
+/* Scrollable output */
 #output {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: 80px;
   white-space: pre-wrap;
   word-break: break-word;
-
-  /* Disable anchoring inside scroll area */
-  overflow-anchor: none;
 }
 
+/* Input bar (NOT fixed anymore) */
 #inputBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   display: flex;
   align-items: flex-end;
   padding: 10px;
@@ -56,6 +49,7 @@ body {
   border-top: 1px solid #222;
 }
 
+/* Textarea */
 #input {
   flex: 1;
   resize: none;
@@ -71,6 +65,7 @@ body {
   word-break: break-word;
 }
 
+/* Send button */
 #sendBtn {
   margin-left: 8px;
   background: #00ff00;
@@ -90,56 +85,29 @@ body {
 ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
   </div>
-</div>
 
-<div id="inputBar">
-  <textarea 
-    id="input"
-    rows="1"
-    placeholder="Type command..."
-    enterkeyhint="send"
-  ></textarea>
-  <button id="sendBtn">↑</button>
+  <div id="inputBar">
+    <textarea 
+      id="input"
+      rows="1"
+      placeholder="Type command..."
+      enterkeyhint="send"
+    ></textarea>
+    <button id="sendBtn">↑</button>
+  </div>
 </div>
 
 <script>
-const input  = document.getElementById("input");
+const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
-let keyboardOpen = false;
-
-/* Auto-resize textarea */
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
 input.addEventListener("input", autoResize);
 
-/* Detect keyboard via viewport change */
-let initialHeight = window.innerHeight;
-
-window.addEventListener("resize", () => {
-  if (window.innerHeight < initialHeight) {
-    keyboardOpen = true;
-  } else {
-    keyboardOpen = false;
-
-    /* Force bottom lock when keyboard collapses */
-    setTimeout(() => {
-      output.scrollTop = output.scrollHeight;
-    }, 10);
-  }
-});
-
-/* Prevent browser restoring scroll position */
-output.addEventListener("scroll", () => {
-  if (!keyboardOpen) {
-    output.scrollTop = output.scrollHeight;
-  }
-});
-
-/* Send message */
 function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -151,13 +119,10 @@ function sendMessage() {
   input.value = "";
   autoResize();
 
-  /* Force bottom lock */
   output.scrollTop = output.scrollHeight;
 }
-
 sendBtn.addEventListener("click", sendMessage);
 
-/* Service worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
 }
