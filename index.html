@@ -4,56 +4,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="/eldritch-v2/manifest.json">
 
-<!-- Retro VT323 font -->
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-
 <style>
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  height: 100dvh;
   background: black;
   color: #00ff00;
-  font-family: 'VT323', monospace;
-  font-size: 20px;           /* Larger size like your 110% setting */
-  line-height: 1.35;
-  letter-spacing: 1px;
-}
-
-body {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Main container */
-#container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  font-family: monospace;
   overflow: hidden;
 }
 
-/* Output area - retro terminal feel */
+#container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 #output {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: hidden; /* 🔥 prevent horizontal scroll */
   padding: 16px;
-  padding-bottom: 80px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  text-shadow: 0 0 6px #00ff00;     /* CRT glow */
-  font-family: 'VT323', monospace;
-  font-size: 20px;
-  line-height: 1.35;
+  white-space: pre-wrap; /* preserve line breaks */
+  word-break: break-word; /* break long words */
 }
 
-/* Style for user messages */
-#output > div {
-  margin-bottom: 8px;
-}
-
-/* Input bar */
 #inputBar {
   position: fixed;
   bottom: 0;
@@ -67,7 +43,6 @@ body {
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
-/* Textarea - retro style */
 #input {
   flex: 1;
   resize: none;
@@ -75,18 +50,15 @@ body {
   outline: none;
   background: transparent;
   color: #00ff00;
-  font-family: 'VT323', monospace;
-  font-size: 20px;
-  line-height: 1.35;
-  letter-spacing: 1px;
+  font-size: 16px;
+  line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  text-shadow: 0 0 4px #00ff00;
+
+  white-space: pre-wrap;   /* 🔥 allow stacking */
+  word-break: break-word;  /* 🔥 prevent horizontal growth */
 }
 
-/* Send button */
 #sendBtn {
   margin-left: 8px;
   background: #00ff00;
@@ -95,8 +67,8 @@ body {
   border-radius: 20px;
   padding: 8px 14px;
   font-weight: bold;
-  font-family: 'VT323', monospace;
 }
+
 </style>
 </head>
 
