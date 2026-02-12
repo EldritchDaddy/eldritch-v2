@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="/eldritch-v2/manifest.json">
 
@@ -13,19 +12,28 @@ html, body {
   background: black;
   color: #00ff00;
   font-family: monospace;
-  overflow: hidden; /* prevent page scroll */
 }
 
-/* Scroll container */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main container */
+#container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Output area */
 #output {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 60px; /* reserve space for input */
+  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
-  box-sizing: border-box;
+  padding-bottom: 80px; /* space for input bar */
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -37,10 +45,11 @@ html, body {
   left: 0;
   right: 0;
   display: flex;
+  align-items: flex-end;
   padding: 10px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: #111;
   border-top: 1px solid #222;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
 /* Textarea */
@@ -52,8 +61,11 @@ html, body {
   background: transparent;
   color: #00ff00;
   font-size: 16px;
+  line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Send button */
@@ -71,18 +83,25 @@ html, body {
 
 <body>
 
-<div id="output">
+<div id="container">
+  <div id="output">
 ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
+  </div>
 </div>
 
 <div id="inputBar">
-  <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
+  <textarea 
+    id="input" 
+    rows="1" 
+    placeholder="Type command..." 
+    enterkeyhint="send"
+  ></textarea>
   <button id="sendBtn">↑</button>
 </div>
 
 <script>
-const input  = document.getElementById("input");
+const input = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
@@ -90,10 +109,8 @@ function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
-input.addEventListener("input", autoResize);
 
-/* prevent focus loss */
-sendBtn.addEventListener("mousedown", e => e.preventDefault());
+input.addEventListener("input", autoResize);
 
 function sendMessage() {
   const text = input.value.trim();
@@ -104,17 +121,17 @@ function sendMessage() {
   output.appendChild(div);
 
   input.value = "";
-  input.style.height = "auto";
-
+  autoResize();
   output.scrollTop = output.scrollHeight;
-
-  input.focus();
 }
 
 sendBtn.addEventListener("click", sendMessage);
 
+// Register Service Worker
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
+  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW error:", err));
 }
 </script>
 
