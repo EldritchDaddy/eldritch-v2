@@ -33,7 +33,7 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
-  padding-bottom: 80px; /* space for input bar */
+  padding-bottom: 80px;
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -112,15 +112,19 @@ function autoResize() {
 
 input.addEventListener("input", autoResize);
 
-/* === Prevent button from stealing focus (critical) === */
+/* Prevent button from stealing focus */
 sendBtn.addEventListener("mousedown", function(e) {
   e.preventDefault();
 });
 
-/* === Send message === */
+/* Smart auto-scroll */
 function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
+
+  // Check if user is near bottom before adding message
+  const isNearBottom =
+    output.scrollTop + output.clientHeight >= output.scrollHeight - 10;
 
   const div = document.createElement("div");
   div.textContent = "> " + text;
@@ -129,9 +133,12 @@ function sendMessage() {
   input.value = "";
   autoResize();
 
-  output.scrollTop = output.scrollHeight;
+  // Only scroll if user was already near bottom
+  if (isNearBottom) {
+    output.scrollTop = output.scrollHeight;
+  }
 
-  /* === Keep keyboard open === */
+  // Keep keyboard open
   input.focus();
 }
 
