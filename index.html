@@ -13,36 +13,30 @@ html, body {
   background: black;
   color: #00ff00;
   font-family: monospace;
+  overflow: hidden; /* prevent page scroll */
 }
 
-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-/* Main container */
-#container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* Scrollable output */
+/* Scroll container */
 #output {
-  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px; /* reserve space for input */
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 16px;
+  box-sizing: border-box;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 /* Input bar */
 #inputBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  align-items: flex-end;
   padding: 10px;
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: #111;
@@ -58,11 +52,8 @@ body {
   background: transparent;
   color: #00ff00;
   font-size: 16px;
-  line-height: 1.4;
   max-height: 120px;
   overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 /* Send button */
@@ -80,21 +71,14 @@ body {
 
 <body>
 
-<div id="container">
-  <div id="output">
+<div id="output">
 ELDRITCH V2 — ONLINE BUILD
 If you can read this, evolution has begun.
-  </div>
+</div>
 
-  <div id="inputBar">
-    <textarea 
-      id="input"
-      rows="1"
-      placeholder="Type command..."
-      enterkeyhint="send"
-    ></textarea>
-    <button id="sendBtn">↑</button>
-  </div>
+<div id="inputBar">
+  <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
+  <button id="sendBtn">↑</button>
 </div>
 
 <script>
@@ -102,19 +86,15 @@ const input  = document.getElementById("input");
 const output = document.getElementById("output");
 const sendBtn = document.getElementById("sendBtn");
 
-/* Auto resize textarea */
 function autoResize() {
   input.style.height = "auto";
   input.style.height = input.scrollHeight + "px";
 }
 input.addEventListener("input", autoResize);
 
-/* Prevent button from stealing focus */
-sendBtn.addEventListener("mousedown", function(e) {
-  e.preventDefault();
-});
+/* prevent focus loss */
+sendBtn.addEventListener("mousedown", e => e.preventDefault());
 
-/* Send message */
 function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -128,13 +108,11 @@ function sendMessage() {
 
   output.scrollTop = output.scrollHeight;
 
-  // KEEP KEYBOARD OPEN
   input.focus();
 }
 
 sendBtn.addEventListener("click", sendMessage);
 
-/* Service Worker */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/eldritch-v2/service-worker.js');
 }
