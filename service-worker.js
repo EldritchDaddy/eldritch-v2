@@ -1,4 +1,4 @@
-consttch-v13-cache CACHE_NAME = "eldritch-v16-cache";
+consttch-v13-cache CACHE_NAME = "eldritch-v17-cache";
 
 const FILES_TO_CACHE = [
   "/eldritch-v2/",
