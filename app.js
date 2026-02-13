@@ -1,13 +1,15 @@
 /* ELDRITCH V2 — UI MOCK (Tabs + Panel Contracts)
-   Fixes in this revision:
-   1) Android Enter/arrow key no longer sends. Only green ↑ sends.
-   2) Skills tab uses real spacing blocks (Skill1 / Skill2, Active/Passive divider).
+   Guarantees:
+   - Enter never sends (newline only)
+   - Green ↑ sends
+   - Null-safe (no “nuked UI” if an element is missing)
 */
 
-(() => {
+document.addEventListener("DOMContentLoaded", () => {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+  // ---- Required nodes (guarded) ----
   const contentScroll = $("#contentScroll");
   const inputBar = $("#inputBar");
   const actionBar = $("#actionBar");
@@ -15,6 +17,14 @@
   const sendBtn = $("#sendBtn");
   const cancelBtn = $("#cancelBtn");
   const execBtn = $("#execBtn");
+  const topbar = $("#topbar");
+  const viewport = $("#viewport");
+
+  // Hard guard: if core nodes missing, don’t crash the whole page.
+  if (!contentScroll || !topbar || !viewport) {
+    console.log("[ELDRITCH] Missing core DOM nodes. Check IDs in index.html.");
+    return;
+  }
 
   const state = {
     activeTab: "WORLD",
@@ -63,8 +73,9 @@
       statusStrip: "Lv 1 | XP 0/135 | HP 30 | MP 10 | Fatigue 0 | Conditions None",
     },
 
+    // WORLD LOG is player inputs only (no slogan)
     worldLog: [
-      "> Hmm.",
+      "> Yes! This is it.",
       "> Testing.. in 3.. 2.. 1..",
     ],
 
@@ -136,32 +147,39 @@
       .replaceAll("'", "&#039;");
   }
 
-  function panel(title, bodyHtml) {
+  function panel(_titleIgnored, bodyHtml) {
+    // Titles exist but hidden by CSS per your rule.
     return `
       <section class="panel">
-        <div class="panelTitle">${escapeHtml(title)}</div>
+        <div class="panelTitle">${escapeHtml(_titleIgnored)}</div>
         <div class="mono">${bodyHtml}</div>
       </section>
     `;
-  }
-
-  function setActiveTab(tab) {
-    state.activeTab = tab;
-    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
-    render();
-    syncBars();
   }
 
   function isLifeJob(tab) {
     return tab === "ALCHEMY" || tab === "FORAGING";
   }
 
+  function measureViewport() {
+    const topbarH = topbar ? topbar.offsetHeight : 0;
+    const bottomH =
+      (inputBar && inputBar.style.display !== "none") ? inputBar.offsetHeight :
+      (actionBar && actionBar.style.display !== "none") ? actionBar.offsetHeight : 0;
+
+    viewport.style.height = `calc(100% - ${topbarH + bottomH}px)`;
+  }
+
   function syncBars() {
+    if (!inputBar || !actionBar) return;
+
     if (state.activeTab === "WORLD") {
       inputBar.style.display = "flex";
       actionBar.style.display = "none";
-      input.disabled = false;
-      requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      if (input) {
+        input.disabled = false;
+        requestAnimationFrame(() => input.focus({ preventScroll: true }));
+      }
     } else if (isLifeJob(state.activeTab)) {
       inputBar.style.display = "none";
       actionBar.style.display = "flex";
@@ -172,13 +190,14 @@
     measureViewport();
   }
 
-  function measureViewport() {
-    const topbarH = $("#topbar").offsetHeight;
-    const bottomH = (inputBar.style.display !== "none" ? inputBar.offsetHeight :
-                    (actionBar.style.display !== "none" ? actionBar.offsetHeight : 0));
-    $("#viewport").style.height = `calc(100% - ${topbarH + bottomH}px)`;
+  function setActiveTab(tab) {
+    state.activeTab = tab;
+    $$(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+    render();
+    syncBars();
   }
 
+  // ===== Renderers =====
   function renderWorld() {
     const w = state.world;
 
@@ -197,25 +216,20 @@
       w.statusStrip
     ].join("\n");
 
-    let html = "";
-    html += `
-      <section class="panel">
-        <div class="mono" id="worldUnifiedText">${escapeHtml(unified)}</div>
-      </section>
-    `;
-
     const logLines = state.worldLog
-      .map(l => `<p class="logLine player">${escapeHtml(l)}</p>`)
+      .map(l => `<p class="logLine">${escapeHtml(l)}</p>`)
       .join("");
 
-    html += `
+    contentScroll.innerHTML = `
+      <section class="panel">
+        <div class="mono">${escapeHtml(unified)}</div>
+      </section>
+
       <section class="panel">
         <div class="panelTitle">WORLD LOG</div>
         <div id="worldLogBody" class="mono">${logLines}</div>
       </section>
     `;
-
-    contentScroll.innerHTML = html;
 
     const logEl = $("#worldLogBody");
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
@@ -223,25 +237,24 @@
 
   function renderStatus() {
     const m = state.mc;
+
     const attrLine = `STR ${m.attributes.STR} | AGI ${m.attributes.AGI} | VIT ${m.attributes.VIT} | INT ${m.attributes.INT} | DEX ${m.attributes.DEX} | LUK ${m.attributes.LUK}`;
     const derivedLine = `ATK ${m.derived.ATK} | DEF ${m.derived.DEF} | HIT ${m.derived.HIT} | CRIT ${m.derived.CRIT} | EVA ${m.derived.EVA} | STA_MAX ${m.derived.STA_MAX}`;
     const resLine = `HP ${m.resources.HP} | MP ${m.resources.MP} | Fatigue ${m.resources.Fatigue} | Conditions ${m.resources.Conditions}`;
 
-    let html = "";
-    html += panel("STATUS", escapeHtml([
-      `Name: ${m.name}`,
-      `Level: ${m.level}`,
-      `Title: ${m.title}`,
-      ``,
-      `Attributes: ${attrLine}`,
-      `Derived: ${derivedLine}`,
-      `Resources: ${resLine}`
-    ].join("\n")));
+    const eqLines = Object.entries(m.equipped).map(([k,v]) => `${k}: ${v}`).join("\n");
 
-    const eqLines = Object.entries(m.equipped).map(([k,v]) => `${k}: ${v}`);
-    html += panel("EQUIPPED", escapeHtml(eqLines.join("\n")));
-
-    contentScroll.innerHTML = html;
+    contentScroll.innerHTML =
+      panel("STATUS", escapeHtml([
+        `Name: ${m.name}`,
+        `Level: ${m.level}`,
+        `Title: ${m.title}`,
+        ``,
+        `Attributes: ${attrLine}`,
+        `Derived: ${derivedLine}`,
+        `Resources: ${resLine}`,
+      ].join("\n"))) +
+      panel("EQUIPPED", escapeHtml(eqLines));
   }
 
   function renderInventory() {
@@ -253,37 +266,30 @@
       `Equipped/Unequip: ${inv.changes.equip.join(", ")}`
     ].join("\n");
 
-    function listSection(title, items) {
+    const listSection = (title, items) => {
       const body = items.map(i => `[${i.name}] [${i.rarity}] [x${i.qty}]`).join("\n");
-      return panel(title, escapeHtml(body));
-    }
+      return panel(title, escapeHtml(body || "(none)"));
+    };
 
-    let html = "";
-    html += panel("RECENT CHANGES", escapeHtml(changes));
-    html += listSection("MATERIALS", inv.materials);
-    html += listSection("CONSUMABLES", inv.consumables);
-    html += listSection("UNEQUIPPED", inv.unequipped);
-
-    contentScroll.innerHTML = html;
+    contentScroll.innerHTML =
+      panel("RECENT CHANGES", escapeHtml(changes)) +
+      listSection("MATERIALS", inv.materials) +
+      listSection("CONSUMABLES", inv.consumables) +
+      listSection("UNEQUIPPED", inv.unequipped);
   }
 
-  // ===== Skills renderer rebuilt for spacing =====
   function renderSkills() {
     const s = state.skills;
 
-    const activeItems = s.active.map(x => `
-      <div class="skillItem">
-        ${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery} | ${x.cd}`)}
-      </div>
+    const activeItems = (s.active || []).map(x => `
+      <div class="skillItem">${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery} | ${x.cd}`)}</div>
     `).join("");
 
-    const passiveItems = s.passive.map(x => `
-      <div class="skillItem">
-        ${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery}`)}
-      </div>
+    const passiveItems = (s.passive || []).map(x => `
+      <div class="skillItem">${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery}`)}</div>
     `).join("");
 
-    const html = `
+    contentScroll.innerHTML = `
       <section class="panel">
         <div class="skillSectionTitle">ACTIVE</div>
         <div class="skillList">${activeItems || `<div class="skillItem">(none)</div>`}</div>
@@ -294,18 +300,16 @@
         <div class="skillList">${passiveItems || `<div class="skillItem">(none)</div>`}</div>
       </section>
     `;
-
-    contentScroll.innerHTML = html;
   }
 
   function renderMaps() {
-    const blocks = state.maps.continents.map(c => {
-      const regions = c.regions.map(r => `- ${r}`).join("\n");
+    const blocks = (state.maps.continents || []).map(c => {
+      const regions = (c.regions || []).map(r => `- ${r}`).join("\n");
       return panel("CONTINENT", escapeHtml([
         `[${c.name}] [ID hidden]`,
         ``,
         `Regions:`,
-        regions
+        regions || "- (none)"
       ].join("\n")));
     }).join("");
 
@@ -313,8 +317,8 @@
   }
 
   function renderNPC() {
-    const blocks = state.npcs.map(n => {
-      const notes = n.notes.map(x => `- ${x}`).join("\n");
+    const blocks = (state.npcs || []).map(n => {
+      const notes = (n.notes || []).map(x => `- ${x}`).join("\n");
       return panel("NPC PROFILE", escapeHtml([
         `Name: ${n.name}`,
         `Race: ${n.race}`,
@@ -337,23 +341,21 @@
       return;
     }
 
-    const recipeLines = lj.recipes.map(r => [
-      `[${r.name}]`,
-      `Success: ${r.success} | Time: ${r.time}`,
-      `Materials: ${r.mats.join(" | ")}`,
-      ``
-    ].join("\n")).join("\n");
-
     const header = [
       `Life Job: ${lj.jobName} [ID hidden]`,
       `Mastery: ${lj.mastery}`,
     ].join("\n");
 
-    let html = "";
-    html += panel("LIFE JOB", escapeHtml(header));
-    html += panel("RECIPES", escapeHtml(recipeLines.trim() || "(none)"));
+    const recipeLines = (lj.recipes || []).map(r => [
+      `[${r.name}]`,
+      `Success: ${r.success} | Time: ${r.time}`,
+      `Materials: ${r.mats.join(" | ")}`,
+      ``
+    ].join("\n")).join("\n").trim();
 
-    contentScroll.innerHTML = html;
+    contentScroll.innerHTML =
+      panel("LIFE JOB", escapeHtml(header)) +
+      panel("RECIPES", escapeHtml(recipeLines || "(none)"));
   }
 
   function render() {
@@ -369,26 +371,15 @@
       default:
         contentScroll.innerHTML = panel(state.activeTab, escapeHtml("(unimplemented)"));
     }
-    requestAnimationFrame(measureViewport);
   }
 
-  // ---------- INPUT ----------
+  // ===== Input behavior =====
   function autoResize() {
+    if (!input) return;
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 140) + "px";
     measureViewport();
   }
-
-  input.addEventListener("input", autoResize);
-
-  // Prevent send button stealing focus (reduces keyboard collapse)
-  sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
-
-  // IMPORTANT: Never send on Enter. Enter inserts newline.
-  // (We also removed any previous enter-to-send handler.)
-  input.addEventListener("keydown", (e) => {
-    // no-op by design
-  });
 
   function appendWorldLog(line) {
     state.worldLog.push(line);
@@ -396,11 +387,11 @@
   }
 
   function sendMessage() {
+    if (!input) return;
     const text = input.value.trimEnd();
     if (!text.trim()) return;
 
     appendWorldLog("> " + text);
-
     input.value = "";
     autoResize();
 
@@ -410,11 +401,23 @@
     }
   }
 
-  sendBtn.addEventListener("click", sendMessage);
+  // Enter never sends, always newline (explicitly do nothing)
+  if (input) {
+    input.addEventListener("input", autoResize);
+    input.addEventListener("keydown", (_e) => {
+      // NO SEND ON ENTER. Intentionally empty.
+    });
+  }
 
-  // Life job actions (mock)
-  cancelBtn.addEventListener("click", () => setActiveTab("WORLD"));
-  execBtn.addEventListener("click", () => {
+  // Prevent button stealing focus (reduces keyboard collapse)
+  if (sendBtn) {
+    sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
+    sendBtn.addEventListener("click", sendMessage);
+  }
+
+  // Life job actions
+  if (cancelBtn) cancelBtn.addEventListener("click", () => setActiveTab("WORLD"));
+  if (execBtn) execBtn.addEventListener("click", () => {
     const tab = state.activeTab;
     const label = tab === "ALCHEMY" ? "Alchemy" : "Foraging";
     appendWorldLog(`> [${label}] Execute (mock).`);
@@ -427,6 +430,7 @@
   window.addEventListener("resize", measureViewport);
   window.addEventListener("orientationchange", measureViewport);
 
+  // Initial
   render();
   syncBars();
   measureViewport();
@@ -437,5 +441,4 @@
       .then(() => console.log("[SW] registered"))
       .catch(err => console.log("[SW] error:", err));
   }
-})();
-```0
+});
