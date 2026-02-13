@@ -1,203 +1,238 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
-  <link rel="manifest" href="/eldritch-v2/manifest.json" />
-
+  <link rel="manifest" href="./manifest.json" />
   <title>ELDRITCH V2</title>
 
   <style>
-    :root {
-      --vh: 1vh;
-      --header-h: 72px;
-      --input-h: 64px;
-      --safe-b: env(safe-area-inset-bottom, 0px);
-      --safe-t: env(safe-area-inset-top, 0px);
-    }
+    :root { --safeB: env(safe-area-inset-bottom); }
 
     html, body {
       margin: 0;
       padding: 0;
-      height: calc(var(--vh) * 100);
+      height: 100%;
       background: #000;
       color: #00ff00;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       overflow: hidden;
-      -webkit-text-size-adjust: 100%;
-      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    #app {
-      height: calc(var(--vh) * 100);
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ===== Top Tabs ===== */
-    #header {
-      position: fixed;
+    /* Top tabs */
+    #topbar {
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
-      padding-top: var(--safe-t);
-      background: #060606;
-      border-bottom: 1px solid #103010;
-      z-index: 50;
+      z-index: 20;
+      padding: 10px 10px 8px;
+      background: #000;
+      border-bottom: 1px solid rgba(0,255,0,0.08);
     }
 
-    #tabs {
+    .tabrow {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      padding: 10px 10px 6px 10px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
-    #tabs2 {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      padding: 0 10px 10px 10px;
-    }
+    .tabrow.second { grid-template-columns: repeat(4, 1fr); margin-bottom: 0; }
 
     .tab {
-      user-select: none;
-      border: 1px solid #103010;
-      background: #020802;
-      color: #00ff00;
-      border-radius: 12px;
-      padding: 10px 6px;
-      font-size: 13px;
+      border: 1px solid rgba(0,255,0,0.20);
+      color: rgba(0,255,0,0.85);
+      background: rgba(0,0,0,0.35);
+      padding: 12px 10px;
+      border-radius: 16px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-align: center;
-      letter-spacing: 0.4px;
+      user-select: none;
     }
 
     .tab.active {
       background: #00ff00;
       color: #000;
       border-color: #00ff00;
-      font-weight: 800;
+      box-shadow: 0 0 18px rgba(0,255,0,0.18);
     }
 
-    /* ===== Main Viewport ===== */
+    /* Main viewport */
     #viewport {
-      position: absolute;
-      top: calc(var(--header-h));
-      left: 0;
-      right: 0;
-      bottom: calc(var(--input-h) + var(--safe-b));
+      height: calc(100% - 140px); /* overridden by JS after measure */
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
-    #scroll {
-      height: 100%;
+    /* Content area scroll */
+    #contentScroll {
+      flex: 1;
       overflow-y: auto;
-      overflow-x: hidden;
-      padding: 12px;
-      box-sizing: border-box;
-      white-space: pre-wrap;
-      word-break: break-word;
+      padding: 14px 10px 14px;
+      scroll-behavior: auto;
     }
 
-    /* WORLD panel styling */
+    /* Card panels */
     .panel {
-      border: 1px solid #103010;
-      border-radius: 14px;
-      padding: 12px;
-      margin-bottom: 10px;
-      background: #020202;
+      border: 1px solid rgba(0,255,0,0.18);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.35);
+      padding: 14px 14px;
+      margin-bottom: 18px; /* 1–2 space separation between panels */
+      box-shadow: 0 0 0 1px rgba(0,255,0,0.04) inset;
     }
 
     .panelTitle {
       font-weight: 900;
-      margin-bottom: 8px;
-      color: #55ff55;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+      opacity: 0.95;
     }
 
-    .line {
-      margin: 0;
-      padding: 0;
-      line-height: 1.35;
+    .mono {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.42;
+      font-size: 18px;
     }
 
-    .muted {
-      color: #67c467;
-      opacity: 0.9;
+    /* World unified block + World Log */
+    #worldUnifiedText { margin: 0; }
+    #worldLogBody {
+      max-height: 180px;
+      overflow-y: auto; /* separate vertical scroll */
+      padding-right: 6px;
     }
 
-    /* ===== Input Bar ===== */
+    .logLine { margin: 0; }
+    .logLine.player { opacity: 0.95; }
+    .logLine.err { opacity: 0.85; }
+
+    /* Bottom input bar (WORLD only) */
     #inputBar {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
-      padding-bottom: calc(10px + var(--safe-b));
-      padding-left: 10px;
-      padding-right: 10px;
-      padding-top: 10px;
-      background: #060606;
-      border-top: 1px solid #103010;
-      z-index: 60;
+      z-index: 30;
+      padding: 10px 10px calc(10px + var(--safeB));
+      background: rgba(17,17,17,0.92);
+      border-top: 1px solid rgba(0,255,0,0.14);
       display: flex;
-      gap: 10px;
       align-items: flex-end;
+      gap: 10px;
+      backdrop-filter: blur(6px);
     }
 
     #input {
       flex: 1;
       resize: none;
-      border: 1px solid #103010;
+      border: none;
       outline: none;
-      background: #000;
+      background: transparent;
       color: #00ff00;
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-size: 15px;
-      line-height: 1.4;
+      font-size: 18px;
+      line-height: 1.3;
       max-height: 140px;
       overflow-y: auto;
+      padding: 10px 10px;
+      border-radius: 14px;
+      box-shadow: 0 0 0 1px rgba(0,255,0,0.10) inset;
     }
 
     #sendBtn {
+      width: 54px;
+      height: 54px;
+      border-radius: 999px;
       border: none;
       background: #00ff00;
       color: #000;
-      border-radius: 16px;
-      padding: 10px 16px;
+      font-size: 22px;
       font-weight: 900;
-      font-size: 16px;
-      user-select: none;
+      line-height: 1;
+      display: grid;
+      place-items: center;
     }
 
-    #sendBtn:active { transform: scale(0.98); }
+    /* Bottom action bar (Life Jobs only) */
+    #actionBar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      padding: 10px 10px calc(10px + var(--safeB));
+      background: rgba(17,17,17,0.92);
+      border-top: 1px solid rgba(0,255,0,0.14);
+      display: none;
+      gap: 10px;
+      backdrop-filter: blur(6px);
+    }
+
+    .actionBtn {
+      flex: 1;
+      padding: 14px 12px;
+      border-radius: 16px;
+      font-weight: 900;
+      border: 1px solid rgba(0,255,0,0.22);
+      background: rgba(0,0,0,0.35);
+      color: rgba(0,255,0,0.9);
+    }
+
+    .actionBtn.primary {
+      background: #00ff00;
+      color: #000;
+      border-color: #00ff00;
+    }
+
+    /* Hide scrollbars lightly (still usable) */
+    #contentScroll::-webkit-scrollbar,
+    #worldLogBody::-webkit-scrollbar {
+      width: 8px;
+    }
+    #contentScroll::-webkit-scrollbar-thumb,
+    #worldLogBody::-webkit-scrollbar-thumb {
+      background: rgba(0,255,0,0.18);
+      border-radius: 999px;
+    }
   </style>
 </head>
 
 <body>
-  <div id="app">
-    <div id="header">
-      <div id="tabs"></div>
-      <div id="tabs2"></div>
+  <div id="topbar">
+    <div class="tabrow">
+      <div class="tab active" data-tab="WORLD">WORLD</div>
+      <div class="tab" data-tab="STATUS">STATUS</div>
+      <div class="tab" data-tab="INVENTORY">INVENTORY</div>
+      <div class="tab" data-tab="SKILLS">SKILLS</div>
     </div>
-
-    <div id="viewport">
-      <div id="scroll"></div>
-    </div>
-
-    <div id="inputBar">
-      <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
-      <button id="sendBtn">↑</button>
+    <div class="tabrow second">
+      <div class="tab" data-tab="MAPS">MAPS</div>
+      <div class="tab" data-tab="NPC">NPC</div>
+      <div class="tab" data-tab="ALCHEMY">ALCHEMY</div>
+      <div class="tab" data-tab="FORAGING">FORAGING</div>
     </div>
   </div>
 
-  <script src="/eldritch-v2/app.js"></script>
-  <script>
-    // Service worker (cache update requires SW version bump)
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/eldritch-v2/service-worker.js")
-        .catch(() => {});
-    }
-  </script>
+  <div id="viewport">
+    <div id="contentScroll"></div>
+  </div>
+
+  <!-- WORLD input -->
+  <div id="inputBar" aria-label="World input">
+    <textarea id="input" rows="1" placeholder="" enterkeyhint="send"></textarea>
+    <button id="sendBtn" aria-label="Send">↑</button>
+  </div>
+
+  <!-- Life Job action buttons -->
+  <div id="actionBar" aria-label="Life job actions">
+    <button class="actionBtn" id="cancelBtn">Cancel</button>
+    <button class="actionBtn primary" id="execBtn">Execute</button>
+  </div>
+
+  <script src="./app.js"></script>
 </body>
 </html>
