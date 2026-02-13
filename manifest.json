@@ -1,26 +1,14 @@
 {
-  "name": "Eldritch V2",
-  "short_name": "Eldritch",
-  "description": "The horrors return. Eldritch V2 awaits.",
-  "start_url": "./",
+  "name": "ELDRITCH V2",
+  "short_name": "ELDRITCH",
+  "start_url": "./index.html",
   "scope": "./",
-  "id": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png" }
   ]
 }
