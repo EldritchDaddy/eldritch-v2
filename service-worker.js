@@ -1,4 +1,4 @@
-/* ELDRITCH V2 SW (cache v18)
+/* ELDRITCH V2 SW (cache v19)
    - Cache-first for app shell
    - Network-first for navigations (fallback to cache)
 */
