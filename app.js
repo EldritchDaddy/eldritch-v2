@@ -1,7 +1,7 @@
 /* ELDRITCH V2 — UI MOCK (Tabs + Panel Contracts)
-   - WORLD: shows unified mandatory block + WORLD LOG (player inputs only) with its own scroll
-   - STATUS/INVENTORY/SKILLS/MAPS/NPC: view-only; input hidden
-   - ALCHEMY/FORAGING (Life Jobs): input hidden; action bar shows Cancel/Execute
+   Fixes in this revision:
+   1) Android Enter/arrow key no longer sends. Only green ↑ sends.
+   2) Skills tab uses real spacing blocks (Skill1 / Skill2, Active/Passive divider).
 */
 
 (() => {
@@ -16,24 +16,15 @@
   const cancelBtn = $("#cancelBtn");
   const execBtn = $("#execBtn");
 
-  // ---------- MOCK STATE ----------
   const state = {
     activeTab: "WORLD",
 
-    // Engine 1 summary style stats (mock)
     mc: {
       name: "MC",
       level: 1,
       title: "None",
       attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
-      derived: {
-        ATK: 12,
-        DEF: 6,
-        HIT: "75%",
-        CRIT: "5%",
-        EVA: "10%",
-        STA_MAX: 30,
-      },
+      derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%", STA_MAX: 30 },
       resources: { HP: 30, MP: 10, Fatigue: 0, Conditions: "None" },
       equipped: {
         Mainhand: "Iron Dagger",
@@ -66,30 +57,19 @@
         "Your own footsteps feel too loud, as if the forest is counting them.",
         "A thin thread of lantern-light flickers between trunks, then dies."
       ],
-      kyraName: "Kyra", // Kyra -> Seris -> Vaela
-      kyra: {
-        risk: "MEDIUM",
-        advantage: "+10",
-        strain: "18%",
-        recommendation: "HOLD."
-      },
+      kyraName: "Kyra",
+      kyra: { risk: "MEDIUM", advantage: "+10", strain: "18%", recommendation: "HOLD." },
       prompt: "What will you do?",
       statusStrip: "Lv 1 | XP 0/135 | HP 30 | MP 10 | Fatigue 0 | Conditions None",
     },
 
-    // Player-only world log lines
     worldLog: [
       "> Hmm.",
       "> Testing.. in 3.. 2.. 1..",
     ],
 
-    // Inventory categories (mock; each section scrolls with full page scroll for now)
     inventory: {
-      changes: {
-        used: ["(none)"],
-        stored: ["(none)"],
-        equip: ["(none)"],
-      },
+      changes: { used: ["(none)"], stored: ["(none)"], equip: ["(none)"] },
       materials: [
         { name: "Hypotites", rarity: "Common", qty: 10 },
         { name: "Thicket Resin", rarity: "Common", qty: 3 },
@@ -104,7 +84,6 @@
       ],
     },
 
-    // Skills mock
     skills: {
       active: [
         { name: "Piercing Lunge", desc: "Fast linear thrust with increased crit rate.", mastery: "Novice", cd: "Ready" },
@@ -116,7 +95,6 @@
       ]
     },
 
-    // Maps mock: continents list collapsible
     maps: {
       continents: [
         { name: "Asterveil", regions: ["Cindergrove Empire", "Sable Coast", "The Whispering Belt"] },
@@ -124,13 +102,11 @@
       ]
     },
 
-    // NPC mock: per-NPC collapsible panels
     npcs: [
       { name: "Elara", race: "Human", role: "Scout", relation: "Friend", notes: ["Tracks well in wet ground.", "Avoids open flame."] },
       { name: "Kiara", race: "Half-Elf", role: "Courier", relation: "Neutral", notes: ["Knows back paths.", "Hates debt."] },
     ],
 
-    // Life Jobs mock
     lifeJobs: {
       ALCHEMY: {
         jobName: "Alchemy",
@@ -151,16 +127,6 @@
     }
   };
 
-  // ---------- VIEW HELPERS ----------
-  function panel(title, bodyHtml) {
-    return `
-      <section class="panel">
-        <div class="panelTitle">${escapeHtml(title)}</div>
-        <div class="mono">${bodyHtml}</div>
-      </section>
-    `;
-  }
-
   function escapeHtml(s) {
     return String(s)
       .replaceAll("&", "&amp;")
@@ -170,8 +136,13 @@
       .replaceAll("'", "&#039;");
   }
 
-  function lines(arr) {
-    return arr.map(l => escapeHtml(l)).join("\n");
+  function panel(title, bodyHtml) {
+    return `
+      <section class="panel">
+        <div class="panelTitle">${escapeHtml(title)}</div>
+        <div class="mono">${bodyHtml}</div>
+      </section>
+    `;
   }
 
   function setActiveTab(tab) {
@@ -185,19 +156,11 @@
     return tab === "ALCHEMY" || tab === "FORAGING";
   }
 
-  function isViewOnly(tab) {
-    return tab !== "WORLD" && !isLifeJob(tab);
-  }
-
   function syncBars() {
-    // WORLD: show input bar
-    // View-only tabs: hide all bottom bars
-    // Life jobs: show action bar
     if (state.activeTab === "WORLD") {
       inputBar.style.display = "flex";
       actionBar.style.display = "none";
       input.disabled = false;
-      // keep typing comfortable
       requestAnimationFrame(() => input.focus({ preventScroll: true }));
     } else if (isLifeJob(state.activeTab)) {
       inputBar.style.display = "none";
@@ -209,7 +172,6 @@
     measureViewport();
   }
 
-  // Keeps viewport height stable around bottom bars
   function measureViewport() {
     const topbarH = $("#topbar").offsetHeight;
     const bottomH = (inputBar.style.display !== "none" ? inputBar.offsetHeight :
@@ -217,7 +179,6 @@
     $("#viewport").style.height = `calc(100% - ${topbarH + bottomH}px)`;
   }
 
-  // ---------- RENDERERS ----------
   function renderWorld() {
     const w = state.world;
 
@@ -236,7 +197,6 @@
       w.statusStrip
     ].join("\n");
 
-    // WORLD unified block (single block)
     let html = "";
     html += `
       <section class="panel">
@@ -244,8 +204,10 @@
       </section>
     `;
 
-    // WORLD LOG (player inputs only; separate scroll)
-    const logLines = state.worldLog.map(l => `<p class="logLine player">${escapeHtml(l)}</p>`).join("");
+    const logLines = state.worldLog
+      .map(l => `<p class="logLine player">${escapeHtml(l)}</p>`)
+      .join("");
+
     html += `
       <section class="panel">
         <div class="panelTitle">WORLD LOG</div>
@@ -255,14 +217,12 @@
 
     contentScroll.innerHTML = html;
 
-    // Keep world log pinned to bottom when sending, without yanking whole page
     const logEl = $("#worldLogBody");
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
   }
 
   function renderStatus() {
     const m = state.mc;
-
     const attrLine = `STR ${m.attributes.STR} | AGI ${m.attributes.AGI} | VIT ${m.attributes.VIT} | INT ${m.attributes.INT} | DEX ${m.attributes.DEX} | LUK ${m.attributes.LUK}`;
     const derivedLine = `ATK ${m.derived.ATK} | DEF ${m.derived.DEF} | HIT ${m.derived.HIT} | CRIT ${m.derived.CRIT} | EVA ${m.derived.EVA} | STA_MAX ${m.derived.STA_MAX}`;
     const resLine = `HP ${m.resources.HP} | MP ${m.resources.MP} | Fatigue ${m.resources.Fatigue} | Conditions ${m.resources.Conditions}`;
@@ -288,7 +248,6 @@
     const inv = state.inventory;
 
     const changes = [
-      `RECENT CHANGES:`,
       `Used: ${inv.changes.used.join(", ")}`,
       `Stored: ${inv.changes.stored.join(", ")}`,
       `Equipped/Unequip: ${inv.changes.equip.join(", ")}`
@@ -308,42 +267,46 @@
     contentScroll.innerHTML = html;
   }
 
+  // ===== Skills renderer rebuilt for spacing =====
   function renderSkills() {
     const s = state.skills;
 
-    const active = s.active.map(x =>
-      `${x.name} | ${x.desc} | Mastery ${x.mastery} | ${x.cd}`
-    ).join("\n");
+    const activeItems = s.active.map(x => `
+      <div class="skillItem">
+        ${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery} | ${x.cd}`)}
+      </div>
+    `).join("");
 
-    const passive = s.passive.map(x =>
-      `${x.name} | ${x.desc} | Mastery ${x.mastery}`
-    ).join("\n");
+    const passiveItems = s.passive.map(x => `
+      <div class="skillItem">
+        ${escapeHtml(`${x.name} | ${x.desc} | Mastery ${x.mastery}`)}
+      </div>
+    `).join("");
 
-    // Two blank row separation between ACTIVE and PASSIVE
-    let html = "";
-    html += panel("ACTIVE", escapeHtml(active || "(none)"));
-    html += panel("PASSIVE", escapeHtml(passive || "(none)"));
+    const html = `
+      <section class="panel">
+        <div class="skillSectionTitle">ACTIVE</div>
+        <div class="skillList">${activeItems || `<div class="skillItem">(none)</div>`}</div>
+
+        <div class="sectionDivider"></div>
+
+        <div class="skillSectionTitle">PASSIVE</div>
+        <div class="skillList">${passiveItems || `<div class="skillItem">(none)</div>`}</div>
+      </section>
+    `;
 
     contentScroll.innerHTML = html;
   }
 
   function renderMaps() {
-    // Mock: collapsible continents (simple)
-    const { continents } = state.maps;
-
-    const blocks = continents.map((c, idx) => {
+    const blocks = state.maps.continents.map(c => {
       const regions = c.regions.map(r => `- ${r}`).join("\n");
-      return `
-        <section class="panel">
-          <div class="panelTitle">CONTINENT</div>
-          <div class="mono">
-[${escapeHtml(c.name)}] [ID hidden]
-
-Regions:
-${escapeHtml(regions)}
-          </div>
-        </section>
-      `;
+      return panel("CONTINENT", escapeHtml([
+        `[${c.name}] [ID hidden]`,
+        ``,
+        `Regions:`,
+        regions
+      ].join("\n")));
     }).join("");
 
     contentScroll.innerHTML = blocks || panel("MAPS", escapeHtml("(none)"));
@@ -406,7 +369,6 @@ ${escapeHtml(regions)}
       default:
         contentScroll.innerHTML = panel(state.activeTab, escapeHtml("(unimplemented)"));
     }
-    // Ensure content area is sized right after render
     requestAnimationFrame(measureViewport);
   }
 
@@ -419,26 +381,29 @@ ${escapeHtml(regions)}
 
   input.addEventListener("input", autoResize);
 
-  // Prevent button stealing focus (reduces keyboard collapse risk)
+  // Prevent send button stealing focus (reduces keyboard collapse)
   sendBtn.addEventListener("mousedown", (e) => e.preventDefault());
+
+  // IMPORTANT: Never send on Enter. Enter inserts newline.
+  // (We also removed any previous enter-to-send handler.)
+  input.addEventListener("keydown", (e) => {
+    // no-op by design
+  });
 
   function appendWorldLog(line) {
     state.worldLog.push(line);
-    // keep last 200 lines
     if (state.worldLog.length > 200) state.worldLog.splice(0, state.worldLog.length - 200);
   }
 
   function sendMessage() {
-    const text = input.value.trim();
-    if (!text) return;
+    const text = input.value.trimEnd();
+    if (!text.trim()) return;
 
-    // Only player input goes to WORLD LOG
     appendWorldLog("> " + text);
 
     input.value = "";
     autoResize();
 
-    // Re-render just WORLD if active; keep keyboard open
     if (state.activeTab === "WORLD") {
       renderWorld();
       input.focus({ preventScroll: true });
@@ -447,18 +412,9 @@ ${escapeHtml(regions)}
 
   sendBtn.addEventListener("click", sendMessage);
 
-  // Enter to send, Shift+Enter for newline
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-
   // Life job actions (mock)
   cancelBtn.addEventListener("click", () => setActiveTab("WORLD"));
   execBtn.addEventListener("click", () => {
-    // mock execution: just add a player-visible line in world log
     const tab = state.activeTab;
     const label = tab === "ALCHEMY" ? "Alchemy" : "Foraging";
     appendWorldLog(`> [${label}] Execute (mock).`);
@@ -466,24 +422,20 @@ ${escapeHtml(regions)}
   });
 
   // Tabs
-  $$(".tab").forEach(t => {
-    t.addEventListener("click", () => setActiveTab(t.dataset.tab));
-  });
+  $$(".tab").forEach(t => t.addEventListener("click", () => setActiveTab(t.dataset.tab)));
 
-  // Resize handlers
   window.addEventListener("resize", measureViewport);
   window.addEventListener("orientationchange", measureViewport);
 
-  // Init
   render();
   syncBars();
   measureViewport();
   autoResize();
 
-  // Service worker
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./service-worker.js")
       .then(() => console.log("[SW] registered"))
       .catch(err => console.log("[SW] error:", err));
   }
 })();
+```0
