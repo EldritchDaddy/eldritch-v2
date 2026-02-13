@@ -81,7 +81,7 @@
       border-radius: 18px;
       background: rgba(0,0,0,0.35);
       padding: 14px 14px;
-      margin-bottom: 18px; /* 1–2 space separation between panels */
+      margin-bottom: 18px; /* spacing between panels */
       box-shadow: 0 0 0 1px rgba(0,255,0,0.04) inset;
     }
 
@@ -110,6 +110,34 @@
     .logLine { margin: 0; }
     .logLine.player { opacity: 0.95; }
     .logLine.err { opacity: 0.85; }
+
+    /* ===== Skills spacing (NEW) ===== */
+    .skillSectionTitle {
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      margin: 0 0 10px 0;
+      opacity: 0.95;
+    }
+
+    .skillList {
+      display: flex;
+      flex-direction: column;
+      gap: 14px; /* Skill1 / Skill2 spacing */
+    }
+
+    .sectionDivider {
+      height: 1px;
+      background: rgba(0,255,0,0.35);
+      margin: 18px 0; /* spacing between ACTIVE and PASSIVE */
+      border-radius: 999px;
+    }
+
+    .skillItem {
+      padding: 10px 12px;
+      border: 1px solid rgba(0,255,0,0.18);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.25);
+    }
 
     /* Bottom input bar (WORLD only) */
     #inputBar {
@@ -188,7 +216,7 @@
       border-color: #00ff00;
     }
 
-    /* Hide scrollbars lightly (still usable) */
+    /* Scrollbars */
     #contentScroll::-webkit-scrollbar,
     #worldLogBody::-webkit-scrollbar {
       width: 8px;
@@ -223,7 +251,16 @@
 
   <!-- WORLD input -->
   <div id="inputBar" aria-label="World input">
-    <textarea id="input" rows="1" placeholder="" enterkeyhint="send"></textarea>
+    <textarea
+      id="input"
+      rows="1"
+      placeholder=""
+      enterkeyhint="enter"
+      autocapitalize="none"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    ></textarea>
     <button id="sendBtn" aria-label="Send">↑</button>
   </div>
 
