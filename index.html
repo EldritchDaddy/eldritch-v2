@@ -1,139 +1,203 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="/eldritch-v2/manifest.json">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="/eldritch-v2/manifest.json" />
 
-<style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: black;
-  color: #00ff00;
-  font-family: monospace;
-}
+  <title>ELDRITCH V2</title>
 
-body {
-  display: flex;
-  flex-direction: column;
-}
+  <style>
+    :root {
+      --vh: 1vh;
+      --header-h: 72px;
+      --input-h: 64px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-t: env(safe-area-inset-top, 0px);
+    }
 
-/* Main container */
-#container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: calc(var(--vh) * 100);
+      background: #000;
+      color: #00ff00;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
 
-/* Output area */
-#output {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 16px;
-  padding-bottom: 80px; /* space for input bar */
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+    #app {
+      height: calc(var(--vh) * 100);
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Input bar */
-#inputBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: flex-end;
-  padding: 10px;
-  background: #111;
-  border-top: 1px solid #222;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-}
+    /* ===== Top Tabs ===== */
+    #header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding-top: var(--safe-t);
+      background: #060606;
+      border-bottom: 1px solid #103010;
+      z-index: 50;
+    }
 
-/* Textarea */
-#input {
-  flex: 1;
-  resize: none;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: #00ff00;
-  font-size: 16px;
-  line-height: 1.4;
-  max-height: 120px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+    #tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 10px 10px 6px 10px;
+    }
 
-/* Send button */
-#sendBtn {
-  margin-left: 8px;
-  background: #00ff00;
-  color: black;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 14px;
-  font-weight: bold;
-}
-</style>
+    #tabs2 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 0 10px 10px 10px;
+    }
+
+    .tab {
+      user-select: none;
+      border: 1px solid #103010;
+      background: #020802;
+      color: #00ff00;
+      border-radius: 12px;
+      padding: 10px 6px;
+      font-size: 13px;
+      text-align: center;
+      letter-spacing: 0.4px;
+    }
+
+    .tab.active {
+      background: #00ff00;
+      color: #000;
+      border-color: #00ff00;
+      font-weight: 800;
+    }
+
+    /* ===== Main Viewport ===== */
+    #viewport {
+      position: absolute;
+      top: calc(var(--header-h));
+      left: 0;
+      right: 0;
+      bottom: calc(var(--input-h) + var(--safe-b));
+      overflow: hidden;
+    }
+
+    #scroll {
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* WORLD panel styling */
+    .panel {
+      border: 1px solid #103010;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: #020202;
+    }
+
+    .panelTitle {
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: #55ff55;
+    }
+
+    .line {
+      margin: 0;
+      padding: 0;
+      line-height: 1.35;
+    }
+
+    .muted {
+      color: #67c467;
+      opacity: 0.9;
+    }
+
+    /* ===== Input Bar ===== */
+    #inputBar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding-bottom: calc(10px + var(--safe-b));
+      padding-left: 10px;
+      padding-right: 10px;
+      padding-top: 10px;
+      background: #060606;
+      border-top: 1px solid #103010;
+      z-index: 60;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    #input {
+      flex: 1;
+      resize: none;
+      border: 1px solid #103010;
+      outline: none;
+      background: #000;
+      color: #00ff00;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 15px;
+      line-height: 1.4;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    #sendBtn {
+      border: none;
+      background: #00ff00;
+      color: #000;
+      border-radius: 16px;
+      padding: 10px 16px;
+      font-weight: 900;
+      font-size: 16px;
+      user-select: none;
+    }
+
+    #sendBtn:active { transform: scale(0.98); }
+  </style>
 </head>
 
 <body>
+  <div id="app">
+    <div id="header">
+      <div id="tabs"></div>
+      <div id="tabs2"></div>
+    </div>
 
-<div id="container">
-  <div id="output">
-ELDRITCH V2 — ONLINE BUILD
-If you can read this, evolution has begun.
+    <div id="viewport">
+      <div id="scroll"></div>
+    </div>
+
+    <div id="inputBar">
+      <textarea id="input" rows="1" placeholder="Type command..." enterkeyhint="send"></textarea>
+      <button id="sendBtn">↑</button>
+    </div>
   </div>
-</div>
 
-<div id="inputBar">
-  <textarea 
-    id="input" 
-    rows="1" 
-    placeholder="Type command..." 
-    enterkeyhint="send"
-  ></textarea>
-  <button id="sendBtn">↑</button>
-</div>
-
-<script>
-const input = document.getElementById("input");
-const output = document.getElementById("output");
-const sendBtn = document.getElementById("sendBtn");
-
-function autoResize() {
-  input.style.height = "auto";
-  input.style.height = input.scrollHeight + "px";
-}
-
-input.addEventListener("input", autoResize);
-
-function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
-
-  const div = document.createElement("div");
-  div.textContent = "> " + text;
-  output.appendChild(div);
-
-  input.value = "";
-  autoResize();
-  output.scrollTop = output.scrollHeight;
-}
-
-sendBtn.addEventListener("click", sendMessage);
-
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/eldritch-v2/service-worker.js')
-    .then(() => console.log("SW registered"))
-    .catch(err => console.log("SW error:", err));
-}
-</script>
-
+  <script src="/eldritch-v2/app.js"></script>
+  <script>
+    // Service worker (cache update requires SW version bump)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/eldritch-v2/service-worker.js")
+        .catch(() => {});
+    }
+  </script>
 </body>
 </html>
