@@ -1,13 +1,14 @@
 {
   "name": "ELDRITCH V2",
   "short_name": "ELDRITCH",
+  "version": "26",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",
-  "description": "ELDRITCH V2 — deterministic engine + UI shell.",
+  "description": "ELDRITCH V2 — deterministic engine",
   "icons": [
     {
       "src": "./icon-192_BADASS.png",
