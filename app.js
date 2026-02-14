@@ -15,19 +15,20 @@
  *   - data-tab="ALCHEMY" / "FORAGING"  (legacy mock)
  *   - data-tab="LIFEJOB1" / "LIFEJOB2" (production)
  *
- * BOOT WATCHDOG CONTRACT (NEW):
- * - index.html sets window.__ELDRITCH_BOOTED = false and displays BOOT TIMEOUT if app.js never boots.
- * - app.js must set window.__ELDRITCH_BOOTED = true after successful init.
+ * BOOT WATCHDOG CONTRACT:
+ * - index.html sets window.__ELDRITCH_BOOTED=false and shows BOOT TIMEOUT if app.js never boots.
+ * - app.js MUST set window.__ELDRITCH_BOOTED=true once it has taken control of the screen
+ *   (including FATAL screens), so watchdog never overwrites real errors.
  */
 
 (() => {
   "use strict";
 
-  // BOOT FLAG: default false until we finish init successfully
-  try { window.__ELDRITCH_BOOTED = false; } catch {}
-
   // ---------- Hard guard: never silent blank ----------
   const fatal = (msg, err) => {
+    // IMPORTANT: if we can render FATAL, we have "booted" enough.
+    try { window.__ELDRITCH_BOOTED = true; } catch {}
+
     try { console.log("[ELDRITCH] FATAL:", msg, err || ""); } catch {}
     try {
       const cs = document.querySelector("#contentScroll");
@@ -102,6 +103,9 @@
       return;
     }
 
+    // ✅ BOOT FLAG: we have the DOM and can render, watchdog must never overwrite from here.
+    try { window.__ELDRITCH_BOOTED = true; } catch {}
+
     // -------------------- Storage --------------------
     const STORAGE_KEY = "eldritch:v2:ui_state";
     const STORAGE_VER = 4; // currency + facing normalization + job
@@ -133,7 +137,7 @@
       mc: {
         name: "MC",
         level: 1,
-        job: "None", // ✅ visible in STATUS
+        job: "None",
         title: "None",
         attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
         derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
@@ -328,7 +332,6 @@
       return `Lv ${m.level} | XP ${w.xp.cur}/${w.xp.req} | HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
     };
 
-    // Escaped text panel
     const panel = (title, bodyText) => `
       <section class="panel">
         ${title ? `<div class="panelTitle">${escapeHtml(title)}</div>` : ``}
@@ -336,7 +339,6 @@
       </section>
     `;
 
-    // Safe HTML panel (ONLY for controlled markup we generate)
     const panelHtml = (title, bodyHtml) => `
       <section class="panel">
         ${title ? `<div class="panelTitle">${escapeHtml(title)}</div>` : ``}
@@ -469,13 +471,11 @@
 
       dom.contentScroll.innerHTML = `
         <section class="panel">
-          <div class="skillSectionTitle">ACTIVE</div>
-          <div class="skillList">${active || `<div class="skillItem">(none)</div>`}</div>
+          <div class="panelTitle">ACTIVE</div>
+          <div>${active || `<div class="mono">(none)</div>`}</div>
 
-          <div class="sectionDivider"></div>
-
-          <div class="skillSectionTitle">PASSIVE</div>
-          <div class="skillList">${passive || `<div class="skillItem">(none)</div>`}</div>
+          <div class="panelTitle" style="margin-top:14px;">PASSIVE</div>
+          <div>${passive || `<div class="mono">(none)</div>`}</div>
         </section>
       `;
     }
@@ -598,9 +598,6 @@
     autoResize();
     saveState();
 
-    // ✅ BOOT COMPLETE: tell index.html watchdog we are alive
-    try { window.__ELDRITCH_BOOTED = true; } catch {}
-
     // SW register (GitHub Pages safe relative path)
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -612,4 +609,3 @@
     fatal("app.js crashed during init.", e);
   }
 })();
-```0
