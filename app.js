@@ -1,27 +1,35 @@
 /**
- * ELDRITCH V2 — app.js (production-grade UI shell)
+ * ELDRITCH V2 — app.js (PRODUCTION-GRADE UI SHELL)
  *
- * Guarantees (LOCKED):
- * 1) Enter key inserts newline only (never sends).
- * 2) Only green ↑ sends.
- * 3) Cooldowns are measured in TURNS (input→output cycles).
- * 4) Fatigue displayed as FATIGUE cur/max (STA tied to that max).
- * 5) WORLD shows input bar. STATUS/INVENTORY/SKILLS/MAPS/NPC are view-only.
- * 6) Life Jobs (ALCHEMY/FORAGING) hide input and show [Cancel][Execute].
- * 7) WORLD LOG contains player inputs only. No system echoes.
+ * LOCKED CONTRACT (current):
+ * 1) Enter inserts newline only (never sends). Only green ↑ sends.
+ * 2) WORLD shows input bar. STATUS/INVENTORY/SKILLS/MAPS/NPC are view-only (input hidden).
+ * 3) Life Job 1 & 2 tabs are HIDDEN until unlocked (deterministic discovery law is engine-side).
+ * 4) Cooldowns are in TURNS (input→output cycles), never seconds, never ticks.
+ * 5) Fatigue displayed as: FATIGUE cur/max (ties to STA max).
+ * 6) WORLD LOG contains player inputs only (no system echoes).
+ * 7) Drift-resistant: if DOM IDs are missing, app logs and exits without half-binding.
  *
- * This file is designed to be drop-in with the IDs in your index.html:
- * #contentScroll #inputBar #actionBar #input #sendBtn #cancelBtn #execBtn
- * .tab[data-tab="WORLD"..."FORAGING"]  plus #topbar #viewport.
+ * IMPORTANT:
+ * - This file supports BOTH naming schemes in index.html for life job tabs:
+ *   - data-tab="ALCHEMY" / "FORAGING"  (legacy mock)
+ *   - data-tab="LIFEJOB1" / "LIFEJOB2" (production)
+ *   Both are mapped internally to LIFEJOB1 / LIFEJOB2 and gated by unlock flags.
+ *
+ * Required IDs in index.html:
+ * #topbar #viewport #contentScroll
+ * #inputBar #input #sendBtn
+ * #actionBar #cancelBtn #execBtn
+ * .tab elements with data-tab="WORLD", "STATUS", "INVENTORY", "SKILLS", "MAPS", "NPC"
+ * Optional life job tabs: data-tab="ALCHEMY"/"FORAGING" or "LIFEJOB1"/"LIFEJOB2"
  */
+
 (() => {
   "use strict";
 
-  // ---------------------------- Utilities ----------------------------
+  // -------------------- Utilities --------------------
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-
-  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
   const escapeHtml = (s) =>
     String(s)
@@ -36,7 +44,7 @@
     el.addEventListener(evt, fn, opts);
   };
 
-  // ---------------------------- DOM (required IDs) ----------------------------
+  // -------------------- DOM --------------------
   const dom = {
     contentScroll: $("#contentScroll"),
     inputBar: $("#inputBar"),
@@ -50,15 +58,25 @@
     tabs: $$(".tab"),
   };
 
-  // Hard fail-safe: never crash the PWA shell
-  if (!dom.contentScroll || !dom.topbar || !dom.viewport) {
-    console.log("[ELDRITCH] Missing core DOM nodes. Check index.html IDs.");
+  const missing = [];
+  if (!dom.topbar) missing.push("#topbar");
+  if (!dom.viewport) missing.push("#viewport");
+  if (!dom.contentScroll) missing.push("#contentScroll");
+  if (!dom.inputBar) missing.push("#inputBar");
+  if (!dom.actionBar) missing.push("#actionBar");
+  if (!dom.input) missing.push("#input");
+  if (!dom.sendBtn) missing.push("#sendBtn");
+  if (!dom.cancelBtn) missing.push("#cancelBtn");
+  if (!dom.execBtn) missing.push("#execBtn");
+
+  if (missing.length) {
+    console.log("[ELDRITCH] FATAL: Missing DOM IDs:", missing.join(", "));
     return;
   }
 
-  // ---------------------------- Storage ----------------------------
+  // -------------------- Storage --------------------
   const STORAGE_KEY = "eldritch:v2:ui_state";
-  const STORAGE_VER = 1;
+  const STORAGE_VER = 3;
 
   const loadState = () => {
     try {
@@ -74,18 +92,13 @@
 
   const saveState = () => {
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ ver: STORAGE_VER, state }, null, 0)
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ver: STORAGE_VER, state }));
     } catch {
-      // ignore storage quota / privacy mode issues
+      // ignore
     }
   };
 
-  // ---------------------------- Canon UI State ----------------------------
-  // NOTE: Data here is only to keep UI functional. Game engine will replace.
-  // This is “production-grade shell,” not engine logic.
+  // -------------------- Default (shell) state --------------------
   const defaultState = {
     activeTab: "WORLD",
 
@@ -96,10 +109,12 @@
       attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
       derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
 
-      // FATIGUE is the stamina pool remaining (declines with actions).
-      fatigue: { cur: 30, max: 30 },
+      fatigue: { cur: 30, max: 30 }, // FATIGUE cur/max
 
       resources: { HP: 30, MP: 10, conditions: "None" },
+
+      // Engine sets these deterministically (discovery constitution)
+      unlocks: { lifeJob1: false, lifeJob2: false },
 
       equipped: {
         Mainhand: "Iron Dagger",
@@ -135,12 +150,10 @@
       kyraName: "Kyra",
       kyra: { risk: "MEDIUM", advantage: "+10", strain: "18%", recommendation: "HOLD." },
       prompt: "What will you do?",
-      // For future: XP bars etc. come from engine
       xp: { cur: 0, req: 135 },
     },
 
-    // Player input only. No system echoes here.
-    worldLog: [],
+    worldLog: [], // player inputs only
 
     inventory: {
       changes: { used: ["(none)"], stored: ["(none)"], equip: ["(none)"] },
@@ -159,8 +172,7 @@
     },
 
     skills: {
-      // Cooldown in TURNS:
-      // 0 => Ready, >0 => Cooldown: X turns
+      // Cooldowns in TURNS
       active: [
         { name: "Piercing Lunge", desc: "Fast linear thrust with increased crit rate.", mastery: "Novice", cdTurns: 0 },
         { name: "Flame Coil", desc: "Mid-range fire arc that can Ignite.", mastery: "Novice", cdTurns: 2 },
@@ -183,48 +195,64 @@
       { name: "Kiara", race: "Half-Elf", role: "Courier", relation: "Neutral", notes: ["Knows back paths.", "Hates debt."] },
     ],
 
-    lifeJobs: {
-      ALCHEMY: {
-        jobName: "Alchemy",
-        mastery: "Novice",
-        recipes: [
-          { name: "Minor Healing Draught", success: "72%", mats: ["Thicket Resin x2", "Clear Water x1"], time: "1 turn" },
-          { name: "Smoke Vial", success: "61%", mats: ["Ash Powder x1", "Oil x1"], time: "2 turns" },
-        ],
-      },
-      FORAGING: {
-        jobName: "Foraging",
-        mastery: "Novice",
-        recipes: [
-          { name: "Careful Harvest", success: "85%", mats: ["None"], time: "1 turn" },
-          { name: "Bark-Strip Tether", success: "68%", mats: ["Wet Bark x2"], time: "1 turn" },
-        ],
-      },
-    },
+    // Life Jobs are data-injected by engine later
+    lifeJobs: { LIFEJOB1: null, LIFEJOB2: null },
   };
 
   const state = loadState() || structuredClone(defaultState);
 
-  // ---------------------------- UI Rules ----------------------------
-  const VIEW_ONLY_TABS = new Set(["STATUS", "INVENTORY", "SKILLS", "MAPS", "NPC"]);
-  const LIFE_JOB_TABS = new Set(["ALCHEMY", "FORAGING"]);
+  // -------------------- Tab normalization --------------------
+  const LIFEJOB1_ALIASES = new Set(["LIFEJOB1", "ALCHEMY"]);
+  const LIFEJOB2_ALIASES = new Set(["LIFEJOB2", "FORAGING"]);
 
-  const setActiveTab = (tab) => {
-    state.activeTab = tab;
-    dom.tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tab));
-    syncBars();
-    render();
-    saveState();
+  const normalizeTab = (tab) => {
+    if (LIFEJOB1_ALIASES.has(tab)) return "LIFEJOB1";
+    if (LIFEJOB2_ALIASES.has(tab)) return "LIFEJOB2";
+    return tab;
   };
 
-  const syncBars = () => {
-    const tab = state.activeTab;
+  const VIEW_ONLY_TABS = new Set(["STATUS", "INVENTORY", "SKILLS", "MAPS", "NPC"]);
+  const LIFE_JOB_TABS = new Set(["LIFEJOB1", "LIFEJOB2"]);
+
+  // -------------------- Life Job gating --------------------
+  function applyLifeJobGates() {
+    const u = state.mc?.unlocks || {};
+    const allow1 = !!u.lifeJob1;
+    const allow2 = !!u.lifeJob2;
+
+    // Hide/show both alias types if present
+    for (const el of document.querySelectorAll('.tab[data-tab="LIFEJOB1"], .tab[data-tab="ALCHEMY"]')) {
+      el.style.display = allow1 ? "" : "none";
+    }
+    for (const el of document.querySelectorAll('.tab[data-tab="LIFEJOB2"], .tab[data-tab="FORAGING"]')) {
+      el.style.display = allow2 ? "" : "none";
+    }
+
+    const nt = normalizeTab(state.activeTab);
+    if (!allow1 && nt === "LIFEJOB1") state.activeTab = "WORLD";
+    if (!allow2 && nt === "LIFEJOB2") state.activeTab = "WORLD";
+  }
+
+  // -------------------- Layout / bars --------------------
+  function measureViewport() {
+    const topH = dom.topbar.offsetHeight || 0;
+    const bottomH =
+      dom.inputBar.style.display !== "none"
+        ? dom.inputBar.offsetHeight
+        : dom.actionBar.style.display !== "none"
+          ? dom.actionBar.offsetHeight
+          : 0;
+
+    dom.viewport.style.height = `calc(100% - ${topH + bottomH}px)`;
+  }
+
+  function syncBars() {
+    const tab = normalizeTab(state.activeTab);
 
     if (tab === "WORLD") {
       dom.inputBar.style.display = "flex";
       dom.actionBar.style.display = "none";
       dom.input.disabled = false;
-      // Keep keyboard open in WORLD
       requestAnimationFrame(() => dom.input.focus({ preventScroll: true }));
     } else if (LIFE_JOB_TABS.has(tab)) {
       dom.inputBar.style.display = "none";
@@ -238,40 +266,39 @@
     }
 
     measureViewport();
-  };
+  }
 
-  const measureViewport = () => {
-    const topH = dom.topbar.offsetHeight || 0;
-    const bottomH =
-      dom.inputBar.style.display !== "none"
-        ? dom.inputBar.offsetHeight
-        : dom.actionBar.style.display !== "none"
-          ? dom.actionBar.offsetHeight
-          : 0;
+  function setActiveTab(tabRaw) {
+    const tab = normalizeTab(tabRaw);
+    state.activeTab = tab;
 
-    dom.viewport.style.height = `calc(100% - ${topH + bottomH}px)`;
-  };
+    dom.tabs.forEach((t) => {
+      const dt = normalizeTab(t.dataset.tab);
+      t.classList.toggle("active", dt === tab);
+    });
 
-  // ---------------------------- Turn Mechanics (UI-side only) ----------------------------
-  // Decrement cooldowns once per successful SEND (turn cycle).
-  const decrementCooldownsOneTurn = () => {
+    applyLifeJobGates();
+    syncBars();
+    render();
+    saveState();
+  }
+
+  // -------------------- Turns / cooldowns --------------------
+  function decrementCooldownsOneTurn() {
     const act = state.skills?.active || [];
     for (const s of act) {
-      if (typeof s.cdTurns === "number" && s.cdTurns > 0) {
-        s.cdTurns = Math.max(0, s.cdTurns - 1);
-      }
+      if (typeof s.cdTurns === "number" && s.cdTurns > 0) s.cdTurns = s.cdTurns - 1;
+      if (typeof s.cdTurns === "number" && s.cdTurns < 0) s.cdTurns = 0;
     }
-  };
+  }
 
-  // ---------------------------- Rendering ----------------------------
+  // -------------------- Rendering helpers --------------------
   const fatigueText = () => `FATIGUE ${state.mc.fatigue.cur}/${state.mc.fatigue.max}`;
 
   const statusStrip = () => {
     const m = state.mc;
     const w = state.world;
-    return [
-      `Lv ${m.level} | XP ${w.xp.cur}/${w.xp.req} | HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`
-    ].join("");
+    return `Lv ${m.level} | XP ${w.xp.cur}/${w.xp.req} | HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
   };
 
   const panel = (title, bodyText) => `
@@ -281,11 +308,13 @@
     </section>
   `;
 
-  const renderWorld = () => {
+  // -------------------- Renderers --------------------
+  function renderWorld() {
     const w = state.world;
 
-    // Prose rule: never exceed 4 lines, never below 2 (engine will enforce).
+    // UI safety: enforce prose ceiling 4, floor 2 (engine will enforce canon rule).
     const prose = (w.prose || []).slice(0, 4);
+    while (prose.length < 2) prose.push("");
 
     const unified = [
       `Environment: ${w.environment}`,
@@ -302,7 +331,6 @@
       statusStrip(),
     ].join("\n");
 
-    // WORLD LOG (player inputs only)
     const logLines = (state.worldLog || [])
       .slice(-300)
       .map((l) => `<p class="logLine">${escapeHtml(l)}</p>`)
@@ -321,10 +349,11 @@
 
     const logEl = $("#worldLogBody");
     if (logEl) logEl.scrollTop = logEl.scrollHeight;
-  };
+  }
 
-  const renderStatus = () => {
+  function renderStatus() {
     const m = state.mc;
+
     const attr = `STR ${m.attributes.STR} | AGI ${m.attributes.AGI} | VIT ${m.attributes.VIT} | INT ${m.attributes.INT} | DEX ${m.attributes.DEX} | LUK ${m.attributes.LUK}`;
     const derived = `ATK ${m.derived.ATK} | DEF ${m.derived.DEF} | HIT ${m.derived.HIT} | CRIT ${m.derived.CRIT} | EVA ${m.derived.EVA}`;
     const res = `HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
@@ -342,15 +371,15 @@
         `Resources: ${res}`,
       ].join("\n")) +
       panel("EQUIPPED", eqLines);
-  };
+  }
 
-  const renderInventory = () => {
+  function renderInventory() {
     const inv = state.inventory;
 
     const changes = [
-      `Used: ${inv.changes.used.join(", ")}`,
-      `Stored: ${inv.changes.stored.join(", ")}`,
-      `Equipped/Unequip: ${inv.changes.equip.join(", ")}`,
+      `Used: ${(inv.changes.used || []).join(", ")}`,
+      `Stored: ${(inv.changes.stored || []).join(", ")}`,
+      `Equipped/Unequip: ${(inv.changes.equip || []).join(", ")}`,
     ].join("\n");
 
     const list = (title, items) =>
@@ -364,27 +393,27 @@
       list("MATERIALS", inv.materials) +
       list("CONSUMABLES", inv.consumables) +
       list("UNEQUIPPED", inv.unequipped);
-  };
+  }
 
-  const cooldownLabel = (cdTurns) => (cdTurns <= 0 ? "Ready" : `Cooldown: ${cdTurns} turns`);
-
-  const renderSkills = () => {
+  function renderSkills() {
     const s = state.skills;
 
-    // Each skill is a readable multi-line block (prevents wrap-islands).
-    const activeBlocks = (s.active || [])
+    const cdLabel = (n) => (n <= 0 ? "Ready" : `Cooldown: ${n} turns`);
+
+    const active = (s.active || [])
       .map((x) => {
+        // Multi-line blocks for human readability
         const lines = [
           x.name,
           x.desc,
           `Mastery: ${x.mastery}`,
-          `Status: ${cooldownLabel(typeof x.cdTurns === "number" ? x.cdTurns : 0)}`,
+          `Status: ${cdLabel(typeof x.cdTurns === "number" ? x.cdTurns : 0)}`,
         ].join("\n");
         return `<div class="skillItem">${escapeHtml(lines)}</div>`;
       })
       .join("");
 
-    const passiveBlocks = (s.passive || [])
+    const passive = (s.passive || [])
       .map((x) => {
         const lines = [
           x.name,
@@ -398,17 +427,17 @@
     dom.contentScroll.innerHTML = `
       <section class="panel">
         <div class="skillSectionTitle">ACTIVE</div>
-        <div class="skillList">${activeBlocks || `<div class="skillItem">(none)</div>`}</div>
+        <div class="skillList">${active || `<div class="skillItem">(none)</div>`}</div>
 
         <div class="sectionDivider"></div>
 
         <div class="skillSectionTitle">PASSIVE</div>
-        <div class="skillList">${passiveBlocks || `<div class="skillItem">(none)</div>`}</div>
+        <div class="skillList">${passive || `<div class="skillItem">(none)</div>`}</div>
       </section>
     `;
-  };
+  }
 
-  const renderMaps = () => {
+  function renderMaps() {
     const blocks = (state.maps.continents || [])
       .map((c) => {
         const regions = (c.regions || []).map((r) => `- ${r}`).join("\n");
@@ -422,9 +451,9 @@
       .join("");
 
     dom.contentScroll.innerHTML = blocks || panel("MAPS", "(none)");
-  };
+  }
 
-  const renderNPC = () => {
+  function renderNPC() {
     const blocks = (state.npcs || [])
       .map((n) => {
         const notes = (n.notes || []).map((x) => `- ${x}`).join("\n");
@@ -442,12 +471,18 @@
       .join("");
 
     dom.contentScroll.innerHTML = blocks || panel("NPC", "(none)");
-  };
+  }
 
-  const renderLifeJob = (tab) => {
-    const lj = state.lifeJobs[tab];
+  function renderLifeJob(slot /* "LIFEJOB1" | "LIFEJOB2" */) {
+    const unlocked = slot === "LIFEJOB1" ? !!state.mc.unlocks.lifeJob1 : !!state.mc.unlocks.lifeJob2;
+    if (!unlocked) {
+      dom.contentScroll.innerHTML = panel("LIFE JOB", "(Locked)");
+      return;
+    }
+
+    const lj = state.lifeJobs?.[slot];
     if (!lj) {
-      dom.contentScroll.innerHTML = panel("LIFE JOB", "(missing)");
+      dom.contentScroll.innerHTML = panel("LIFE JOB", "(Unlocked — data not loaded yet)");
       return;
     }
 
@@ -467,56 +502,53 @@
     dom.contentScroll.innerHTML =
       panel("LIFE JOB", header) +
       panel("RECIPES", recipes || "(none)");
-  };
+  }
 
-  const render = () => {
-    switch (state.activeTab) {
+  function render() {
+    const tab = normalizeTab(state.activeTab);
+
+    switch (tab) {
       case "WORLD": return renderWorld();
       case "STATUS": return renderStatus();
       case "INVENTORY": return renderInventory();
       case "SKILLS": return renderSkills();
       case "MAPS": return renderMaps();
       case "NPC": return renderNPC();
-      case "ALCHEMY": return renderLifeJob("ALCHEMY");
-      case "FORAGING": return renderLifeJob("FORAGING");
+      case "LIFEJOB1": return renderLifeJob("LIFEJOB1");
+      case "LIFEJOB2": return renderLifeJob("LIFEJOB2");
       default:
-        dom.contentScroll.innerHTML = panel(state.activeTab, "(unimplemented)");
+        dom.contentScroll.innerHTML = panel(tab, "(unimplemented)");
         return;
     }
-  };
+  }
 
-  // ---------------------------- Input Behavior ----------------------------
-  const autoResize = () => {
-    if (!dom.input) return;
+  // -------------------- Input (WORLD only) --------------------
+  function autoResize() {
     dom.input.style.height = "auto";
     dom.input.style.height = Math.min(dom.input.scrollHeight, 160) + "px";
     measureViewport();
-  };
+  }
 
-  // Never send on Enter: do nothing; browser inserts newline.
-  safeOn(dom.input, "keydown", (_e) => {
-    // Intentionally empty: Enter always newline.
-  });
-
+  // Enter stays newline. We do not intercept keydown.
+  safeOn(dom.input, "keydown", () => { /* intentionally empty */ });
   safeOn(dom.input, "input", autoResize);
 
-  // Prevent send button from stealing focus (reduces keyboard collapse)
+  // Prevent send button from stealing focus (keyboard stability)
   safeOn(dom.sendBtn, "mousedown", (e) => e.preventDefault());
 
-  const appendWorldLog = (line) => {
+  function appendWorldLog(line) {
     state.worldLog.push(line);
     if (state.worldLog.length > 300) state.worldLog.splice(0, state.worldLog.length - 300);
-  };
+  }
 
-  const sendMessage = () => {
-    const raw = (dom.input?.value ?? "");
+  function sendMessage() {
+    const raw = dom.input.value || "";
     const text = raw.trimEnd();
     if (!text.trim()) return;
 
-    // WORLD LOG: player inputs only (no echoes)
     appendWorldLog("> " + text);
 
-    // One SEND = one TURN cycle in UI terms (cooldowns tick down by turns)
+    // One send = one turn (cooldown decreases by turns)
     decrementCooldownsOneTurn();
 
     dom.input.value = "";
@@ -527,17 +559,13 @@
 
     // Keep keyboard open
     requestAnimationFrame(() => dom.input.focus({ preventScroll: true }));
-  };
+  }
 
   safeOn(dom.sendBtn, "click", sendMessage);
 
-  // Life Job actions (UI only)
+  // Life Job action buttons
   safeOn(dom.cancelBtn, "click", () => setActiveTab("WORLD"));
-  safeOn(dom.execBtn, "click", () => {
-    // In production, this will call engine execution for that tab context.
-    // For now, return to WORLD without polluting WORLD LOG.
-    setActiveTab("WORLD");
-  });
+  safeOn(dom.execBtn, "click", () => setActiveTab("WORLD"));
 
   // Tabs
   dom.tabs.forEach((t) => safeOn(t, "click", () => setActiveTab(t.dataset.tab)));
@@ -545,15 +573,18 @@
   safeOn(window, "resize", measureViewport);
   safeOn(window, "orientationchange", measureViewport);
 
-  // ---------------------------- Init ----------------------------
-  render();
+  // -------------------- Init --------------------
+  applyLifeJobGates();
   syncBars();
+  render();
   measureViewport();
   autoResize();
+  saveState();
 
-  // Service worker (relative path for GitHub Pages subfolder)
+  // SW register (GitHub Pages safe relative path)
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js")
+    navigator.serviceWorker
+      .register("./service-worker.js")
       .then(() => console.log("[SW] registered"))
       .catch((err) => console.log("[SW] error:", err));
   }
