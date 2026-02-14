@@ -17,17 +17,22 @@
  *
  * BOOT WATCHDOG CONTRACT:
  * - index.html sets window.__ELDRITCH_BOOTED=false and shows BOOT TIMEOUT if app.js never boots.
- * - app.js MUST set window.__ELDRITCH_BOOTED=true once it has taken control of the screen
- *   (including FATAL screens), so watchdog never overwrites real errors.
+ * - app.js MUST set window.__ELDRITCH_BOOTED=true once it has screen control,
+ *   including FATAL screens, so watchdog never overwrites real errors.
  */
 
 (() => {
   "use strict";
 
+  // ---- Helper: mark boot ownership (safe, never throws) ----
+  const markBooted = () => {
+    try { window.__ELDRITCH_BOOTED = true; } catch {}
+  };
+
   // ---------- Hard guard: never silent blank ----------
   const fatal = (msg, err) => {
-    // IMPORTANT: if we can render FATAL, we have "booted" enough.
-    try { window.__ELDRITCH_BOOTED = true; } catch {}
+    // If we can render FATAL, we own the screen. Do NOT allow watchdog overwrite.
+    markBooted();
 
     try { console.log("[ELDRITCH] FATAL:", msg, err || ""); } catch {}
     try {
@@ -103,8 +108,8 @@
       return;
     }
 
-    // ✅ BOOT FLAG: we have the DOM and can render, watchdog must never overwrite from here.
-    try { window.__ELDRITCH_BOOTED = true; } catch {}
+    // At this point, DOM exists and we can render. We own the screen.
+    markBooted();
 
     // -------------------- Storage --------------------
     const STORAGE_KEY = "eldritch:v2:ui_state";
@@ -471,7 +476,9 @@
 
       dom.contentScroll.innerHTML = `
         <section class="panel">
-          <div class="panelTitle">ACTIVE</div>
+          <div class="panelTitle">SKILLS</div>
+
+          <div class="panelTitle" style="margin-top:10px;">ACTIVE</div>
           <div>${active || `<div class="mono">(none)</div>`}</div>
 
           <div class="panelTitle" style="margin-top:14px;">PASSIVE</div>
@@ -597,6 +604,9 @@
     measureViewport();
     autoResize();
     saveState();
+
+    // Re-assert ownership after init completes (paranoid safety).
+    markBooted();
 
     // SW register (GitHub Pages safe relative path)
     if ("serviceWorker" in navigator) {
