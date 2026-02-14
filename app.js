@@ -1,15 +1,10 @@
 /**
  * ELDRITCH V2 — app.js (PRODUCTION-GRADE UI SHELL)
  *
- * PATCH v4a (STATUS JOB LINE):
- * - Adds mc.job (default "None")
- * - STATUS panel now prints:
- *   Name / Level / Job / Title / ...
- *
  * LOCKED CONTRACT (current):
- * 1) Enter inserts newline only (never sends). Only green ↑ sends.
+ * 1) Enter inserts newline only (never sends). Only ↑ sends.
  * 2) WORLD shows input bar. STATUS/INVENTORY/SKILLS/MAPS/NPC are view-only (input hidden).
- * 3) Life Job 1 & 2 tabs are HIDDEN until unlocked (deterministic discovery law is engine-side).
+ * 3) Life Job 1 & 2 tabs are HIDDEN until unlocked (engine-side).
  * 4) Cooldowns are in TURNS (input→output cycles), never seconds, never ticks.
  * 5) Fatigue displayed as: FATIGUE cur/max (ties to STA max).
  * 6) WORLD LOG contains player inputs only (no system echoes).
@@ -31,9 +26,9 @@
       const cs = document.querySelector("#contentScroll");
       if (cs) {
         const safe = String(msg)
-          .replaceAll("&","&amp;")
-          .replaceAll("<","&lt;")
-          .replaceAll(">","&gt;");
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
         cs.innerHTML = `
           <section class="panel">
             <div class="panelTitle">FATAL</div>
@@ -102,7 +97,7 @@
 
     // -------------------- Storage --------------------
     const STORAGE_KEY = "eldritch:v2:ui_state";
-    const STORAGE_VER = 4; // bumped (currency + facing normalization)
+    const STORAGE_VER = 4; // currency + facing normalization + job
 
     const loadState = () => {
       try {
@@ -131,7 +126,7 @@
       mc: {
         name: "MC",
         level: 1,
-        job: "None",            // ✅ NEW
+        job: "None",          // ✅ NEW
         title: "None",
         attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
         derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
@@ -176,7 +171,7 @@
       worldLog: [],
 
       inventory: {
-        currency: { platinum: 0, gold: 0, silver: 0, copper: 0 },
+        currency: { platinum: 0, gold: 0, silver: 0, copper: 0 }, // ✅ NEW
         changes: { used: ["(none)"], stored: ["(none)"], equip: ["(none)"] },
         materials: [
           { name: "Hypotites", rarity: "Common", qty: 10 },
@@ -220,12 +215,11 @@
 
     const state = loadState() || clone(defaultState);
 
-    // Back-compat normalization
+    // -------------------- Back-compat normalization --------------------
     if (state?.world?.facing === "NE") state.world.facing = "NorthEast";
     if (state?.inventory && !state.inventory.currency) {
       state.inventory.currency = { platinum: 0, gold: 0, silver: 0, copper: 0 };
     }
-    // ✅ Back-compat for job
     if (state?.mc && typeof state.mc.job !== "string") state.mc.job = "None";
 
     // -------------------- Tabs --------------------
@@ -390,7 +384,6 @@
 
     function renderStatus() {
       const m = state.mc;
-
       const attr = `STR ${m.attributes.STR} | AGI ${m.attributes.AGI} | VIT ${m.attributes.VIT} | INT ${m.attributes.INT} | DEX ${m.attributes.DEX} | LUK ${m.attributes.LUK}`;
       const derived = `ATK ${m.derived.ATK} | DEF ${m.derived.DEF} | HIT ${m.derived.HIT} | CRIT ${m.derived.CRIT} | EVA ${m.derived.EVA}`;
       const res = `HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
@@ -400,7 +393,7 @@
         panel("STATUS", [
           `Name: ${m.name}`,
           `Level: ${m.level}`,
-          `Job: ${m.job || "None"}`,   // ✅ NEW LINE
+          `Job: ${m.job || "None"}`,
           `Title: ${m.title}`,
           ``,
           `Attributes: ${attr}`,
@@ -558,7 +551,6 @@
     }
 
     safeOn(dom.input, "input", autoResize);
-
     safeOn(dom.sendBtn, "mousedown", (e) => e.preventDefault());
 
     function appendWorldLog(line) {
@@ -584,10 +576,8 @@
     }
 
     safeOn(dom.sendBtn, "click", sendMessage);
-
     safeOn(dom.cancelBtn, "click", () => setActiveTab("WORLD"));
     safeOn(dom.execBtn, "click", () => setActiveTab("WORLD"));
-
     dom.tabs.forEach((t) => safeOn(t, "click", () => setActiveTab(t.dataset.tab)));
 
     safeOn(window, "resize", measureViewport);
@@ -601,6 +591,7 @@
     autoResize();
     saveState();
 
+    // SW register (GitHub Pages safe relative path)
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("./service-worker.js")
@@ -611,4 +602,3 @@
     fatal("app.js crashed during init.", e);
   }
 })();
-```0
