@@ -1,13 +1,13 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v22 (as requested)
+   Cache v23 (BADASS MODE ICON PATH FIX)
 
    Notes:
-   - Network-first for HTML (prevents “stale shell” after deploy)
+   - Network-first for HTML (prevents stale shell after deploy)
    - Cache-first for static assets (fast + offline)
    - Cleans old caches on activate
 */
 
-const CACHE_VERSION = 22;
+const CACHE_VERSION = 23;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 const CORE_ASSETS = [
@@ -15,10 +15,11 @@ const CORE_ASSETS = [
   "/eldritch-v2/index.html",
   "/eldritch-v2/app.js",
   "/eldritch-v2/manifest.json",
-  // If your icons exist, keep these. If not yet uploaded, either upload them or remove these 3 lines.
-  "/eldritch-v2/icons/icon-192.png",
-  "/eldritch-v2/icons/icon-512.png",
-  "/eldritch-v2/icons/icon-512-maskable.png"
+
+  // BADASS ICONS (root of /eldritch-v2/)
+  "/eldritch-v2/icon-192.png",
+  "/eldritch-v2/icon-512.png",
+  "/eldritch-v2/icon-512-maskable.png"
 ];
 
 // Install: pre-cache core
