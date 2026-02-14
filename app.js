@@ -10,23 +10,21 @@
  * 6) WORLD LOG contains player inputs only (no system echoes).
  * 7) Drift-resistant: if DOM IDs are missing, app logs and exits without half-binding.
  *
- * UPGRADE (THIS COMMIT):
- * A) World “unified” panel now renders with COLOR DISTINCTION via safe, controlled HTML spans:
- *    - Environment / Location / Runtime line / Prompt / Status strip get distinct tints.
- *    - Kyra lines get a “magic” tint.
- *    - Prose stays parchment ink (default).
- *    - WORLD LOG remains unchanged and still shows player inputs only.
- * B) No change to Enter behavior or send behavior.
- * C) No external deps; XSS-safe: all dynamic tokens are escaped.
- *
  * IMPORTANT:
  * - Supports BOTH naming schemes for life job tabs:
  *   - data-tab="ALCHEMY" / "FORAGING"  (legacy mock)
  *   - data-tab="LIFEJOB1" / "LIFEJOB2" (production)
+ *
+ * BOOT WATCHDOG CONTRACT (NEW):
+ * - index.html sets window.__ELDRITCH_BOOTED = false and displays BOOT TIMEOUT if app.js never boots.
+ * - app.js must set window.__ELDRITCH_BOOTED = true after successful init.
  */
 
 (() => {
   "use strict";
+
+  // BOOT FLAG: default false until we finish init successfully
+  try { window.__ELDRITCH_BOOTED = false; } catch {}
 
   // ---------- Hard guard: never silent blank ----------
   const fatal = (msg, err) => {
@@ -106,7 +104,7 @@
 
     // -------------------- Storage --------------------
     const STORAGE_KEY = "eldritch:v2:ui_state";
-    const STORAGE_VER = 5; // bump: world unified now HTML-rendered + style tags
+    const STORAGE_VER = 4; // currency + facing normalization + job
 
     const loadState = () => {
       try {
@@ -135,7 +133,7 @@
       mc: {
         name: "MC",
         level: 1,
-        job: "None", // visible in STATUS
+        job: "None", // ✅ visible in STATUS
         title: "None",
         attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
         derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
@@ -330,6 +328,7 @@
       return `Lv ${m.level} | XP ${w.xp.cur}/${w.xp.req} | HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
     };
 
+    // Escaped text panel
     const panel = (title, bodyText) => `
       <section class="panel">
         ${title ? `<div class="panelTitle">${escapeHtml(title)}</div>` : ``}
@@ -345,12 +344,6 @@
       </section>
     `;
 
-    // Safe line -> HTML, with optional wrapper class (all dynamic content escaped)
-    const lineHtml = (cls, text) => {
-      const safe = escapeHtml(text);
-      return cls ? `<span class="${cls}">${safe}</span>` : safe;
-    };
-
     const coinSpan = (cls, label, value) =>
       `<span class="${cls}">${escapeHtml(label)} ${escapeHtml(String(value))}</span>`;
 
@@ -358,28 +351,23 @@
     function renderWorld() {
       const w = state.world;
 
-      // Enforce prose ceiling 4, floor 2
       const prose = (w.prose || []).slice(0, 4);
       while (prose.length < 2) prose.push("");
 
-      // Build colored unified block (HTML), preserving newlines
-      const lines = [
-        lineHtml("ink-info", `Environment: ${w.environment}`),
-        lineHtml("ink-label", `Location: ${w.location}.`),
-        lineHtml("ink-muted", `RunTime: ${w.runtime} | Time: ${w.time} | Date: ${w.date} | Facing: ${w.facing}`),
-        "",
-        // prose stays default ink (no class), but still escaped
-        ...prose.map((p) => lineHtml("", p)),
-        "",
-        lineHtml("ink-magic", `${w.kyraName}: Risk ${w.kyra.risk} | Advantage ${w.kyra.advantage} | Strain ${w.kyra.strain}`),
-        lineHtml("ink-magic", `${w.kyraName}: Recommendation ${w.kyra.recommendation}`),
-        "",
-        lineHtml("ink-label", w.prompt || ""),
-        "",
-        lineHtml("ink-danger", statusStrip()),
-      ];
-
-      const unifiedHtml = lines.join("<br/>");
+      const unified = [
+        `Environment: ${w.environment}`,
+        `Location: ${w.location}.`,
+        `RunTime: ${w.runtime} | Time: ${w.time} | Date: ${w.date} | Facing: ${w.facing}`,
+        ``,
+        ...prose,
+        ``,
+        `${w.kyraName}: Risk ${w.kyra.risk} | Advantage ${w.kyra.advantage} | Strain ${w.kyra.strain}`,
+        `${w.kyraName}: Recommendation ${w.kyra.recommendation}`,
+        ``,
+        w.prompt,
+        ``,
+        statusStrip(),
+      ].join("\n");
 
       const logLines = (state.worldLog || [])
         .slice(-300)
@@ -388,7 +376,7 @@
 
       dom.contentScroll.innerHTML = `
         <section class="panel">
-          <div class="mono" id="worldUnifiedText">${unifiedHtml}</div>
+          <div class="mono" id="worldUnifiedText">${escapeHtml(unified)}</div>
         </section>
 
         <section class="panel">
@@ -609,6 +597,9 @@
     measureViewport();
     autoResize();
     saveState();
+
+    // ✅ BOOT COMPLETE: tell index.html watchdog we are alive
+    try { window.__ELDRITCH_BOOTED = true; } catch {}
 
     // SW register (GitHub Pages safe relative path)
     if ("serviceWorker" in navigator) {
