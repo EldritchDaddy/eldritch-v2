@@ -49,6 +49,13 @@
       --font-output: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
       --font-input: "Segoe Script", "Bradley Hand", "Comic Sans MS", "Apple Chancery", "Snell Roundhand", cursive;
       --font-ui: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+      /* Section tinting (for later per-line styling) */
+      --ink-muted: rgba(215,198,166,0.78);
+      --ink-strong: rgba(255,214,122,0.92);
+      --ink-danger: rgba(255,74,74,0.92);
+      --ink-magic: rgba(196,91,255,0.92);
+      --ink-info: rgba(77,163,255,0.92);
     }
 
     html, body{
@@ -63,7 +70,6 @@
       font-family: var(--font-ui);
       overflow: hidden;
 
-      /* PATCH: smooth parchment reading */
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -169,15 +175,18 @@
       line-height: 1.55;
       font-size: 15px;
       color: var(--ink-output);
-
-      /* PATCH: slightly more readable “ink” */
       letter-spacing: 0.1px;
-
-      /* ink bleed illusion (subtle) */
       text-shadow:
         0 0 1px rgba(0,0,0,0.35),
         0 1px 0 rgba(0,0,0,0.25);
     }
+
+    /* NEW: optional “ink headings” inside mono blocks (app.js can wrap later) */
+    .ink-label{ color: var(--ink-strong); font-family: var(--font-ui); font-weight: 900; letter-spacing: 0.4px; }
+    .ink-muted{ color: var(--ink-muted); }
+    .ink-danger{ color: var(--ink-danger); font-family: var(--font-ui); font-weight: 900; }
+    .ink-magic{ color: var(--ink-magic); font-family: var(--font-ui); font-weight: 900; }
+    .ink-info{ color: var(--ink-info); font-family: var(--font-ui); font-weight: 900; }
 
     /* WORLD LOG lines */
     .logLine{
@@ -215,7 +224,6 @@
       line-height: 1.55;
       font-size: 15px;
       color: var(--ink-output);
-
       font-family: var(--font-output);
       text-shadow:
         0 0 1px rgba(0,0,0,0.35),
@@ -262,7 +270,6 @@
         0 0 6px rgba(255,138,0,0.18),
         0 0 1px rgba(0,0,0,0.35);
 
-      /* PATCH: reduce “bouncy” layout on mobile */
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
     }
