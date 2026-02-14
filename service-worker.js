@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v30
+   Cache v31
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
@@ -7,7 +7,7 @@
    - Network-first for HTML, cache-first for static
 */
 
-const CACHE_VERSION = 30;
+const CACHE_VERSION = 31;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
@@ -30,12 +30,8 @@ self.addEventListener("install", (event) => {
     const results = await Promise.allSettled(reqs.map((r) => cache.add(r)));
 
     // If something fails, we still proceed (don’t brick install).
-    // You can inspect failures via DevTools > Application > Service Workers console.
-    const failed = results.filter((x) => x.status === "rejected");
-    if (failed.length) {
-      // keep silent in production; uncomment if you want logs
-      // console.log("[SW] precache partial fail:", failed.length);
-    }
+    // const failed = results.filter((x) => x.status === "rejected");
+    // if (failed.length) console.log("[SW] precache partial fail:", failed.length);
 
     self.skipWaiting();
   })());
@@ -58,6 +54,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
 
   if (url.origin !== self.location.origin) return;
+
+  // Hardening: ignore non-GET (prevents weird edge-cases)
+  if (req.method !== "GET") return;
 
   const accept = req.headers.get("accept") || "";
   const isHTML = req.mode === "navigate" || accept.includes("text/html");
@@ -94,4 +93,3 @@ async function cacheFirst(req) {
   if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
   return fresh;
 }
-```0
