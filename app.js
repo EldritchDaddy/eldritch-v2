@@ -63,7 +63,7 @@
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replaceAll("'", "&#040;");
 
     const safeOn = (el, evt, fn, opts) => {
       if (!el) return;
