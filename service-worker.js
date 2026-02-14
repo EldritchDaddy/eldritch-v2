@@ -1,44 +1,56 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
    Cache v23
 
-   - Network-first for HTML
-   - Cache-first for static assets
-   - Cleans old caches on activate
+   Fixes:
+   - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
+   - Install will NOT fail the whole SW if one asset 404s (allSettled)
+   - Network-first for HTML, cache-first for static
 */
 
 const CACHE_VERSION = 23;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
+// IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
 const CORE_ASSETS = [
-  "/eldritch-v2/",
-  "/eldritch-v2/index.html",
-  "/eldritch-v2/app.js",
-  "/eldritch-v2/manifest.json",
-
-  // BADASS icons (root-level, matching repo)
-  "/eldritch-v2/icon-192_BADASS.png",
-  "/eldritch-v2/icon-512_BADASS.png",
-  "/eldritch-v2/icon-512-maskable_BADASS.png"
+  "./",
+  "./index.html",
+  "./app.js",
+  "./manifest.json",
+  "./icon-192_BADASS.png",
+  "./icon-512_BADASS.png",
+  "./icon-512-maskable_BADASS.png"
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
-  );
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+
+    // cache: 'reload' helps avoid weird browser HTTP cache during rapid deploys
+    const reqs = CORE_ASSETS.map((p) => new Request(p, { cache: "reload" }));
+    const results = await Promise.allSettled(reqs.map((r) => cache.add(r)));
+
+    // If something fails, we still proceed (don’t brick install).
+    // You can inspect failures via DevTools > Application > Service Workers console.
+    const failed = results.filter((x) => x.status === "rejected");
+    if (failed.length) {
+      // keep silent in production; uncomment if you want logs
+      // console.log("[SW] precache partial fail:", failed.length);
+    }
+
+    self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith("eldritch-v2-cache-") && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
-      )
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter((k) => k.startsWith("eldritch-v2-cache-") && k !== CACHE_NAME)
+        .map((k) => caches.delete(k))
+    );
+    self.clients.claim();
+  })());
 });
 
 self.addEventListener("fetch", (event) => {
@@ -47,7 +59,10 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== self.location.origin) return;
 
-  if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
+  const accept = req.headers.get("accept") || "";
+  const isHTML = req.mode === "navigate" || accept.includes("text/html");
+
+  if (isHTML) {
     event.respondWith(networkFirst(req));
     return;
   }
@@ -58,13 +73,14 @@ self.addEventListener("fetch", (event) => {
 async function networkFirst(req) {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const fresh = await fetch(req, { cache: "no-store" });
+    const fresh = await fetch(req);
     if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
     return fresh;
-  } catch {
+  } catch (_) {
     const cached = await cache.match(req);
     if (cached) return cached;
-    const fallback = await cache.match("/eldritch-v2/index.html");
+
+    const fallback = await cache.match("./index.html");
     return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
