@@ -1,7 +1,7 @@
 {
   "name": "ELDRITCH V2",
   "short_name": "ELDRITCH",
-  "version": "39",
+  "version": "40",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
