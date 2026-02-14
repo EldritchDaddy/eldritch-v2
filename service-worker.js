@@ -1,19 +1,21 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v37
+   Cache v38
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
    - Install will NOT fail the whole SW if one asset 404s (allSettled)
    - Network-first for HTML, cache-first for static
+   - Offline fallback points to stable ./index.html (not an old ?v=33)
 */
 
-const CACHE_VERSION = 37;
+const CACHE_VERSION = 38;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
 const CORE_ASSETS = [
   "./",
-  "./index.html?v=37",
+  "./index.html",        // stable offline fallback
+  "./index.html?v=37",   // your cache-busted current
   "./app.js?v=37",
   "./manifest.json?v=37",
   "./icon-192_BADASS.png",
@@ -70,7 +72,7 @@ async function networkFirst(req) {
     const cached = await cache.match(req);
     if (cached) return cached;
 
-    const fallback = await cache.match("./index.html?v=33");
+    const fallback = await cache.match("./index.html");
     return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
