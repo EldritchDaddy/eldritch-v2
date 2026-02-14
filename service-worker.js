@@ -1,80 +1,66 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v23 (BADASS MODE ICON PATH FIX)
-
-   Notes:
-   - Network-first for HTML (prevents stale shell after deploy)
-   - Cache-first for static assets (fast + offline)
-   - Cleans old caches on activate
+   Cache v24 (PATH-SAFE + 404-PROOF PRECACHE)
 */
 
-const CACHE_VERSION = 23;
+const CACHE_VERSION = 24;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
+// IMPORTANT: all URLs are RELATIVE to scope so GitHub Pages subpaths don't break.
 const CORE_ASSETS = [
-  "/eldritch-v2/",
-  "/eldritch-v2/index.html",
-  "/eldritch-v2/app.js",
-  "/eldritch-v2/manifest.json",
-
-  // BADASS ICONS (root of /eldritch-v2/)
-  "/eldritch-v2/icon-192.png",
-  "/eldritch-v2/icon-512.png",
-  "/eldritch-v2/icon-512-maskable.png"
+  "./",
+  "./index.html",
+  "./app.js",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-512-maskable.png"
 ];
 
-// Install: pre-cache core
+// Install: precache core WITHOUT failing if one file 404s
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
-  );
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(CORE_ASSETS.map((u) => cache.add(u)));
+    self.skipWaiting();
+  })());
 });
 
-// Activate: clean old caches
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k.startsWith("eldritch-v2-cache-") && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
-      )
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter((k) => k.startsWith("eldritch-v2-cache-") && k !== CACHE_NAME)
+        .map((k) => caches.delete(k))
+    );
+    await self.clients.claim();
+  })());
 });
 
-// Fetch strategy
+// Fetch: network-first for HTML, cache-first for everything else
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Only handle same-origin
   if (url.origin !== self.location.origin) return;
 
-  // HTML: network-first (prevents stale deploy issues)
-  if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
-    event.respondWith(networkFirst(req));
-    return;
-  }
+  const accept = req.headers.get("accept") || "";
+  const isHTML = req.mode === "navigate" || accept.includes("text/html");
 
-  // Static assets: cache-first
-  event.respondWith(cacheFirst(req));
+  event.respondWith(isHTML ? networkFirst(req) : cacheFirst(req));
 });
 
 async function networkFirst(req) {
   const cache = await caches.open(CACHE_NAME);
   try {
     const fresh = await fetch(req);
-    // Only cache good responses
-    if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
+    if (fresh && fresh.ok) cache.put(req, fresh.clone());
     return fresh;
-  } catch (e) {
+  } catch {
     const cached = await cache.match(req);
     if (cached) return cached;
-    // Fallback to cached index for offline nav
-    const fallback = await cache.match("/eldritch-v2/index.html");
-    return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
+    const fallback = await cache.match("./index.html");
+    return fallback || new Response("Offline", { status: 503 });
   }
 }
 
@@ -84,7 +70,6 @@ async function cacheFirst(req) {
   if (cached) return cached;
 
   const fresh = await fetch(req);
-  if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
+  if (fresh && fresh.ok) cache.put(req, fresh.clone());
   return fresh;
 }
-```0
