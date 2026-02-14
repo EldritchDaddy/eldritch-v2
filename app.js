@@ -126,7 +126,7 @@
       mc: {
         name: "MC",
         level: 1,
-        job: "None",          // ✅ NEW
+        job: "None", // ✅ NEW (visible in STATUS)
         title: "None",
         attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
         derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
