@@ -2,7 +2,7 @@
   "name": "ELDRITCH V2",
   "short_name": "ELDRITCH",
   "version": "40",
-  "start_url": "./index.html",
+  "start_url": "./?v=40",
   "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
@@ -28,4 +28,3 @@
     }
   ]
 }
-```0
