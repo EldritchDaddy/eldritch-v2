@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v22 (BADASS icons aligned)
+   Cache v25 (BADASS icons aligned)
 
    Key fix:
    - Install will NOT fail if one asset 404s (no more cache.addAll grenade).
