@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
 
-  <link rel="manifest" href="/eldritch-v2/manifest.json" />
+  <!-- PRODUCTION: use RELATIVE path so GitHub Pages project sites work -->
+  <link rel="manifest" href="./manifest.json" />
 
   <title>ELDRITCH V2</title>
 
@@ -192,12 +193,10 @@
 
     #cancelBtn { background: #222; color: #00ff00; border: 1px solid #143314; }
     #execBtn { background: #00ff00; color: #000; }
-
   </style>
 </head>
 
 <body>
-
   <!-- TOP TABS -->
   <div id="topbar">
     <button class="tab active" data-tab="WORLD">WORLD</button>
@@ -208,7 +207,6 @@
     <button class="tab" data-tab="NPC">NPC</button>
 
     <!-- Life Jobs (hidden by app.js until unlocked) -->
-    <!-- Choose ONE naming scheme; app.js supports both. -->
     <button class="tab" data-tab="LIFEJOB1">LIFE JOB 1</button>
     <button class="tab" data-tab="LIFEJOB2">LIFE JOB 2</button>
   </div>
@@ -232,7 +230,6 @@
 
   <!-- App -->
   <script src="./app.js"></script>
-
 </body>
 </html>
 ```0
