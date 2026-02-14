@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v31
+   Cache v32
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
@@ -7,7 +7,7 @@
    - Network-first for HTML, cache-first for static
 */
 
-const CACHE_VERSION = 31;
+const CACHE_VERSION = 32;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
@@ -93,3 +93,4 @@ async function cacheFirst(req) {
   if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
   return fresh;
 }
+```0
