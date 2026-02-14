@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v39
+   Cache v40
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
@@ -8,16 +8,16 @@
    - Offline fallback points to stable ./index.html (not an old ?v=33)
 */
 
-const CACHE_VERSION = 39;
+const CACHE_VERSION = 40;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
 const CORE_ASSETS = [
   "./",
   "./index.html",        // stable offline fallback
-  "./index.html?v=39",   // your cache-busted current
-  "./app.js?v=39",
-  "./manifest.json?v=39",
+  "./index.html?v=40",   // your cache-busted current
+  "./app.js?v=40",
+  "./manifest.json?v=40",
   "./icon-192_BADASS.png",
   "./icon-512_BADASS.png",
   "./icon-512-maskable_BADASS.png"
