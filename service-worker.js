@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v33
+   Cache v34
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
@@ -7,15 +7,15 @@
    - Network-first for HTML, cache-first for static
 */
 
-const CACHE_VERSION = 33;
+const CACHE_VERSION = 34;
 const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
 const CORE_ASSETS = [
   "./",
-  "./index.html",
-  "./app.js",
-  "./manifest.json",
+  "./index.html?v=33",
+  "./app.js?v=33",
+  "./manifest.json?v=33",
   "./icon-192_BADASS.png",
   "./icon-512_BADASS.png",
   "./icon-512-maskable_BADASS.png"
@@ -24,15 +24,8 @@ const CORE_ASSETS = [
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-
-    // cache: 'reload' helps avoid weird browser HTTP cache during rapid deploys
     const reqs = CORE_ASSETS.map((p) => new Request(p, { cache: "reload" }));
-    const results = await Promise.allSettled(reqs.map((r) => cache.add(r)));
-
-    // If something fails, we still proceed (don’t brick install).
-    // const failed = results.filter((x) => x.status === "rejected");
-    // if (failed.length) console.log("[SW] precache partial fail:", failed.length);
-
+    await Promise.allSettled(reqs.map((r) => cache.add(r)));
     self.skipWaiting();
   })());
 });
@@ -54,8 +47,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
 
   if (url.origin !== self.location.origin) return;
-
-  // Hardening: ignore non-GET (prevents weird edge-cases)
   if (req.method !== "GET") return;
 
   const accept = req.headers.get("accept") || "";
@@ -79,7 +70,7 @@ async function networkFirst(req) {
     const cached = await cache.match(req);
     if (cached) return cached;
 
-    const fallback = await cache.match("./index.html");
+    const fallback = await cache.match("./index.html?v=33");
     return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
@@ -93,4 +84,3 @@ async function cacheFirst(req) {
   if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
   return fresh;
 }
-```0
