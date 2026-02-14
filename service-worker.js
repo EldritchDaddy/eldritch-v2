@@ -1,34 +1,49 @@
-/* ELDRITCH V2 SW (cache v21)
-   - Cache-first for app shell
-   - Network-first for navigations (fallback to cache)
+/* ELDRITCH V2 — service-worker.js (PRODUCTION)
+   Cache v22 (as requested)
+
+   Notes:
+   - Network-first for HTML (prevents “stale shell” after deploy)
+   - Cache-first for static assets (fast + offline)
+   - Cleans old caches on activate
 */
 
-const CACHE_VERSION = "eldritch-v2-cache-v18";
-const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./app.js",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+const CACHE_VERSION = 22;
+const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
+
+const CORE_ASSETS = [
+  "/eldritch-v2/",
+  "/eldritch-v2/index.html",
+  "/eldritch-v2/app.js",
+  "/eldritch-v2/manifest.json",
+  // If your icons exist, keep these. If not yet uploaded, either upload them or remove these 3 lines.
+  "/eldritch-v2/icons/icon-192.png",
+  "/eldritch-v2/icons/icon-512.png",
+  "/eldritch-v2/icons/icon-512-maskable.png"
 ];
 
+// Install: pre-cache core
 self.addEventListener("install", (event) => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_VERSION);
-    await cache.addAll(APP_SHELL);
-    self.skipWaiting();
-  })());
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+  );
+  self.skipWaiting();
 });
 
+// Activate: clean old caches
 self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => (k !== CACHE_VERSION ? caches.delete(k) : null)));
-    self.clients.claim();
-  })());
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((k) => k.startsWith("eldritch-v2-cache-") && k !== CACHE_NAME)
+          .map((k) => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
 });
 
+// Fetch strategy
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -36,31 +51,39 @@ self.addEventListener("fetch", (event) => {
   // Only handle same-origin
   if (url.origin !== self.location.origin) return;
 
-  // Navigation: network-first
-  if (req.mode === "navigate") {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(req);
-        const cache = await caches.open(CACHE_VERSION);
-        cache.put("./index.html", fresh.clone());
-        return fresh;
-      } catch {
-        const cached = await caches.match("./index.html");
-        return cached || new Response("Offline", { status: 503, headers: { "Content-Type": "text/plain" } });
-      }
-    })());
+  // HTML: network-first (prevents stale deploy issues)
+  if (req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html")) {
+    event.respondWith(networkFirst(req));
     return;
   }
 
-  // App shell: cache-first
-  event.respondWith((async () => {
-    const cached = await caches.match(req);
-    if (cached) return cached;
-
-    const fresh = await fetch(req);
-    const cache = await caches.open(CACHE_VERSION);
-    cache.put(req, fresh.clone());
-    return fresh;
-  })());
+  // Static assets: cache-first
+  event.respondWith(cacheFirst(req));
 });
+
+async function networkFirst(req) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const fresh = await fetch(req);
+    // Only cache good responses
+    if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
+    return fresh;
+  } catch (e) {
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    // Fallback to cached index for offline nav
+    const fallback = await cache.match("/eldritch-v2/index.html");
+    return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
+  }
+}
+
+async function cacheFirst(req) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(req);
+  if (cached) return cached;
+
+  const fresh = await fetch(req);
+  if (fresh && fresh.status === 200) cache.put(req, fresh.clone());
+  return fresh;
+}
 ```0
