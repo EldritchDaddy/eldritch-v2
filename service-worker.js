@@ -13,9 +13,9 @@ const CACHE_NAME = `eldritch-v2-cache-v${CACHE_VERSION}`;
 // IMPORTANT: all relative to SW scope: https://eldritchdaddy.github.io/eldritch-v2/
 const CORE_ASSETS = [
   "./",
-  "./index.html?v=33",
-  "./app.js?v=33",
-  "./manifest.json?v=33",
+  "./index.html?v=36",
+  "./app.js?v=36",
+  "./manifest.json?v=36",
   "./icon-192_BADASS.png",
   "./icon-512_BADASS.png",
   "./icon-512-maskable_BADASS.png"
