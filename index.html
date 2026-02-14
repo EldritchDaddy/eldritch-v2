@@ -5,31 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#000000" />
 
-  <!-- PRODUCTION: relative path for GitHub Pages project sites -->
   <link rel="manifest" href="./manifest.json" />
-
   <title>ELDRITCH</title>
 
   <style>
     :root{
       --safe-b: env(safe-area-inset-bottom);
 
-      /* Ink + parchment */
       --ink-output: #D7C6A6;
       --ink-input:  #FFD36A;
 
-      /* Guild hall background */
       --bg:  #060503;
       --bg2: #0B0906;
 
-      /* Panels */
       --panel:  rgba(20, 16, 10, 0.78);
       --panel2: rgba(26, 21, 13, 0.70);
 
       --border:  rgba(255, 214, 122, 0.18);
       --border2: rgba(255, 214, 122, 0.12);
 
-      /* Threat tiers */
       --t-white:  #E6E6E6;
       --t-green:  #3DFF6B;
       --t-blue:   #4DA3FF;
@@ -39,23 +33,14 @@
       --t-boss:   #FF2E88;
       --t-world:  #FF8A00;
 
-      /* Currency */
       --c-platinum:#CFE9FF;
       --c-gold:    #FFD36A;
       --c-silver:  #C9D2DA;
       --c-copper:  #C87A3A;
 
-      /* Typography */
       --font-output: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
       --font-input: "Segoe Script", "Bradley Hand", "Comic Sans MS", "Apple Chancery", "Snell Roundhand", cursive;
       --font-ui: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-
-      /* Section tinting (for later per-line styling) */
-      --ink-muted: rgba(215,198,166,0.78);
-      --ink-strong: rgba(255,214,122,0.92);
-      --ink-danger: rgba(255,74,74,0.92);
-      --ink-magic: rgba(196,91,255,0.92);
-      --ink-info: rgba(77,163,255,0.92);
     }
 
     html, body{
@@ -69,12 +54,10 @@
       color: var(--ink-output);
       font-family: var(--font-ui);
       overflow: hidden;
-
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Top tabs bar: guild plaque */
     #topbar{
       display: flex;
       gap: 8px;
@@ -83,8 +66,6 @@
       background: linear-gradient(180deg, rgba(20,16,10,0.85), rgba(10,8,6,0.85));
       user-select: none;
       -webkit-user-select: none;
-
-      /* horizontal scroll, no wrap */
       flex-wrap: nowrap;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -114,7 +95,6 @@
       text-shadow: 0 0 10px rgba(255,138,0,0.18);
     }
 
-    /* Viewport region (app.js sets height precisely) */
     #viewport{
       height: calc(100% - 60px);
       display: flex;
@@ -122,7 +102,6 @@
       overflow: hidden;
     }
 
-    /* Scrollable content area */
     #contentScroll{
       flex: 1;
       overflow-y: auto;
@@ -132,7 +111,6 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Panels: parchment cards */
     .panel{
       position: relative;
       border: 1px solid var(--border);
@@ -167,7 +145,6 @@
       opacity: 0.95;
     }
 
-    /* MAIN "scribe" text (output) */
     .mono{
       font-family: var(--font-output);
       white-space: pre-wrap;
@@ -181,14 +158,6 @@
         0 1px 0 rgba(0,0,0,0.25);
     }
 
-    /* NEW: optional “ink headings” inside mono blocks (app.js can wrap later) */
-    .ink-label{ color: var(--ink-strong); font-family: var(--font-ui); font-weight: 900; letter-spacing: 0.4px; }
-    .ink-muted{ color: var(--ink-muted); }
-    .ink-danger{ color: var(--ink-danger); font-family: var(--font-ui); font-weight: 900; }
-    .ink-magic{ color: var(--ink-magic); font-family: var(--font-ui); font-weight: 900; }
-    .ink-info{ color: var(--ink-info); font-family: var(--font-ui); font-weight: 900; }
-
-    /* WORLD LOG lines */
     .logLine{
       margin: 0 0 8px 0;
       color: rgba(215,198,166,0.95);
@@ -196,47 +165,6 @@
       text-shadow: none;
     }
 
-    /* Skills */
-    .skillSectionTitle{
-      font-family: var(--font-ui);
-      font-weight: 900;
-      font-size: 12px;
-      margin: 0 0 10px 0;
-      letter-spacing: 0.8px;
-      color: var(--ink-input);
-      opacity: 0.95;
-    }
-    .skillList{
-      max-height: 55vh;
-      overflow-y: auto;
-      padding-right: 4px;
-      -webkit-overflow-scrolling: touch;
-    }
-    .skillItem{
-      border: 1px solid rgba(255,214,122,0.14);
-      border-radius: 14px;
-      padding: 10px;
-      margin: 0 0 12px 0;
-      background: rgba(10,8,6,0.55);
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset;
-
-      white-space: pre-wrap;
-      line-height: 1.55;
-      font-size: 15px;
-      color: var(--ink-output);
-      font-family: var(--font-output);
-      text-shadow:
-        0 0 1px rgba(0,0,0,0.35),
-        0 1px 0 rgba(0,0,0,0.25);
-    }
-    .sectionDivider{
-      height: 14px;
-      margin: 12px 0 12px 0;
-      border-top: 1px solid rgba(255,214,122,0.14);
-      opacity: 0.9;
-    }
-
-    /* Input bar: scribe desk */
     #inputBar{
       display: flex;
       align-items: flex-end;
@@ -253,23 +181,18 @@
       border: none;
       outline: none;
       background: transparent;
-
-      /* golden handwritten */
       color: var(--ink-input);
       font-family: var(--font-input);
       font-size: 18px;
       line-height: 1.35;
-
       max-height: 160px;
       overflow-y: auto;
       padding: 0;
       margin: 0;
       caret-color: var(--ink-input);
-
       text-shadow:
         0 0 6px rgba(255,138,0,0.18),
         0 0 1px rgba(0,0,0,0.35);
-
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
     }
@@ -295,7 +218,6 @@
       font-family: var(--font-ui);
     }
 
-    /* Action bar (Life jobs only; app.js will show/hide) */
     #actionBar{
       display: none;
       align-items: center;
@@ -329,7 +251,6 @@
       color: #1a120a;
     }
 
-    /* Optional utility classes for future colored tokens */
     .threat-white{color:var(--t-white)}
     .threat-green{color:var(--t-green)}
     .threat-blue{color:var(--t-blue)}
@@ -372,7 +293,38 @@
     <button id="execBtn" class="actionBtn">Execute</button>
   </div>
 
-  <script src="./app.js"></script>
+  <!-- BOOT WATCHDOG: prints if app.js never executes -->
+  <script>
+    (function () {
+      window.__ELDRITCH_BOOTED = false;
+      const fail = (title, body) => {
+        const cs = document.getElementById("contentScroll");
+        if (!cs) return;
+        const esc = (s) => String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+        cs.innerHTML =
+          '<section class="panel">' +
+            '<div class="panelTitle">' + esc(title) + '</div>' +
+            '<div class="mono">' + esc(body) + '</div>' +
+          '</section>';
+      };
+      window.addEventListener("error", function (e) {
+        fail("BOOT ERROR", (e && e.message) ? e.message : "Unknown error");
+      });
+      window.addEventListener("unhandledrejection", function (e) {
+        fail("BOOT REJECTION", (e && e.reason) ? String(e.reason) : "Unhandled promise rejection");
+      });
+      setTimeout(function () {
+        if (!window.__ELDRITCH_BOOTED) {
+          fail(
+            "BOOT TIMEOUT",
+            "app.js did not boot. Likely cached/stale index.html, blocked script load, or SW serving an old response. Check app.js URL loads and add ?v bump."
+          );
+        }
+      }, 1200);
+    })();
+  </script>
+
+  <!-- CACHE-BUSTED + DEFER -->
+  <script defer src="./app.js?v=32"></script>
 </body>
 </html>
-```0
