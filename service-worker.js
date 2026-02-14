@@ -5,7 +5,7 @@
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
    - Install will NOT fail the whole SW if one asset 404s (allSettled)
    - Network-first for HTML, cache-first for static
-   - Offline fallback points to stable ./index.html (not an old ?v=33)
+   - Offline fallback prefers cache-busted current, then stable ./index.html
 */
 
 const CACHE_VERSION = 40;
@@ -72,7 +72,11 @@ async function networkFirst(req) {
     const cached = await cache.match(req);
     if (cached) return cached;
 
-    const fallback = await cache.match("./index.html");
+    // CHANGED: prefer the cache-busted current index, then stable index
+    const fallback =
+      (await cache.match("./index.html?v=40")) ||
+      (await cache.match("./index.html"));
+
     return fallback || new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
