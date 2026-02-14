@@ -1,6 +1,11 @@
 /**
  * ELDRITCH V2 — app.js (PRODUCTION-GRADE UI SHELL)
  *
+ * PATCH v4a (STATUS JOB LINE):
+ * - Adds mc.job (default "None")
+ * - STATUS panel now prints:
+ *   Name / Level / Job / Title / ...
+ *
  * LOCKED CONTRACT (current):
  * 1) Enter inserts newline only (never sends). Only green ↑ sends.
  * 2) WORLD shows input bar. STATUS/INVENTORY/SKILLS/MAPS/NPC are view-only (input hidden).
@@ -25,10 +30,14 @@
     try {
       const cs = document.querySelector("#contentScroll");
       if (cs) {
+        const safe = String(msg)
+          .replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;");
         cs.innerHTML = `
           <section class="panel">
             <div class="panelTitle">FATAL</div>
-            <div class="mono">${String(msg).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}</div>
+            <div class="mono">${safe}</div>
           </section>
         `;
       }
@@ -93,7 +102,7 @@
 
     // -------------------- Storage --------------------
     const STORAGE_KEY = "eldritch:v2:ui_state";
-    const STORAGE_VER = 3;
+    const STORAGE_VER = 4; // bumped (currency + facing normalization)
 
     const loadState = () => {
       try {
@@ -122,6 +131,7 @@
       mc: {
         name: "MC",
         level: 1,
+        job: "None",            // ✅ NEW
         title: "None",
         attributes: { STR: 10, AGI: 10, VIT: 10, INT: 10, DEX: 10, LUK: 10 },
         derived: { ATK: 12, DEF: 6, HIT: "75%", CRIT: "5%", EVA: "10%" },
@@ -152,7 +162,7 @@
         runtime: "00:00",
         time: "09:00 PM",
         date: "Day 1, Cycle 1",
-        facing: "NE",
+        facing: "NorthEast",
         prose: [
           "The thicket breathes in slow waves, leaves slick with cold dew.",
           "Somewhere deeper, something small scrapes stone, then stops.",
@@ -166,6 +176,7 @@
       worldLog: [],
 
       inventory: {
+        currency: { platinum: 0, gold: 0, silver: 0, copper: 0 },
         changes: { used: ["(none)"], stored: ["(none)"], equip: ["(none)"] },
         materials: [
           { name: "Hypotites", rarity: "Common", qty: 10 },
@@ -208,6 +219,14 @@
     };
 
     const state = loadState() || clone(defaultState);
+
+    // Back-compat normalization
+    if (state?.world?.facing === "NE") state.world.facing = "NorthEast";
+    if (state?.inventory && !state.inventory.currency) {
+      state.inventory.currency = { platinum: 0, gold: 0, silver: 0, copper: 0 };
+    }
+    // ✅ Back-compat for job
+    if (state?.mc && typeof state.mc.job !== "string") state.mc.job = "None";
 
     // -------------------- Tabs --------------------
     const LIFEJOB1_ALIASES = new Set(["LIFEJOB1", "ALCHEMY"]);
@@ -308,6 +327,7 @@
       return `Lv ${m.level} | XP ${w.xp.cur}/${w.xp.req} | HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
     };
 
+    // Escaped text panel
     const panel = (title, bodyText) => `
       <section class="panel">
         ${title ? `<div class="panelTitle">${escapeHtml(title)}</div>` : ``}
@@ -315,9 +335,21 @@
       </section>
     `;
 
+    // Safe HTML panel (ONLY for controlled markup we generate)
+    const panelHtml = (title, bodyHtml) => `
+      <section class="panel">
+        ${title ? `<div class="panelTitle">${escapeHtml(title)}</div>` : ``}
+        <div class="mono">${bodyHtml}</div>
+      </section>
+    `;
+
+    const coinSpan = (cls, label, value) =>
+      `<span class="${cls}">${escapeHtml(label)} ${escapeHtml(String(value))}</span>`;
+
     // -------------------- Renderers --------------------
     function renderWorld() {
       const w = state.world;
+
       const prose = (w.prose || []).slice(0, 4);
       while (prose.length < 2) prose.push("");
 
@@ -358,6 +390,7 @@
 
     function renderStatus() {
       const m = state.mc;
+
       const attr = `STR ${m.attributes.STR} | AGI ${m.attributes.AGI} | VIT ${m.attributes.VIT} | INT ${m.attributes.INT} | DEX ${m.attributes.DEX} | LUK ${m.attributes.LUK}`;
       const derived = `ATK ${m.derived.ATK} | DEF ${m.derived.DEF} | HIT ${m.derived.HIT} | CRIT ${m.derived.CRIT} | EVA ${m.derived.EVA}`;
       const res = `HP ${m.resources.HP} | MP ${m.resources.MP} | ${fatigueText()} | Conditions ${m.resources.conditions}`;
@@ -367,6 +400,7 @@
         panel("STATUS", [
           `Name: ${m.name}`,
           `Level: ${m.level}`,
+          `Job: ${m.job || "None"}`,   // ✅ NEW LINE
           `Title: ${m.title}`,
           ``,
           `Attributes: ${attr}`,
@@ -378,6 +412,18 @@
 
     function renderInventory() {
       const inv = state.inventory;
+
+      const cur = inv.currency || { platinum: 0, gold: 0, silver: 0, copper: 0 };
+      const currencyHtml = [
+        coinSpan("coin-platinum", "Platinum:", cur.platinum),
+        " | ",
+        coinSpan("coin-gold", "Gold:", cur.gold),
+        " | ",
+        coinSpan("coin-silver", "Silver:", cur.silver),
+        " | ",
+        coinSpan("coin-copper", "Copper:", cur.copper),
+      ].join("");
+
       const changes = [
         `Used: ${(inv.changes.used || []).join(", ")}`,
         `Stored: ${(inv.changes.stored || []).join(", ")}`,
@@ -391,6 +437,7 @@
         );
 
       dom.contentScroll.innerHTML =
+        panelHtml("CURRENCY", currencyHtml) +
         panel("RECENT CHANGES", changes) +
         list("MATERIALS", inv.materials) +
         list("CONSUMABLES", inv.consumables) +
@@ -510,10 +557,8 @@
       measureViewport();
     }
 
-    // Contract: Enter stays newline. No keydown interception.
     safeOn(dom.input, "input", autoResize);
 
-    // Prevent send button from stealing focus (keyboard stability)
     safeOn(dom.sendBtn, "mousedown", (e) => e.preventDefault());
 
     function appendWorldLog(line) {
@@ -556,7 +601,6 @@
     autoResize();
     saveState();
 
-    // SW register (GitHub Pages safe relative path)
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("./service-worker.js")
@@ -564,6 +608,7 @@
         .catch((err) => console.log("[SW] error:", err));
     }
   } catch (e) {
-    fatal("app.js crashed during init. Most common cause: structuredClone / cached mismatch.", e);
+    fatal("app.js crashed during init.", e);
   }
 })();
+```0
