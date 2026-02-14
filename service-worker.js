@@ -1,5 +1,5 @@
 /* ELDRITCH V2 — service-worker.js (PRODUCTION)
-   Cache v3
+   Cache v36
 
    Fixes:
    - Uses RELATIVE paths so GitHub Pages base (/eldritch-v2/) always works
